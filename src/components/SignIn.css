@@ -1,0 +1,40 @@
+.sign-in-card {
+  margin: 50px auto;
+  max-width: 400px;
+  text-align: center;
+}
+
+.sign-in-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 32px;
+  font-weight: 600;
+  background: linear-gradient(90deg, #60a5fa, #a78bfa, #22d3ee);
+  background-size: 200% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: glowMove 4s linear infinite;
+  margin-bottom: 10px;
+}
+
+.sign-in-card h2 {
+  color: #e5e7eb;
+  margin-bottom: 10px;
+}
+
+.sign-in-card p {
+  color: #9ca3af;
+  margin-bottom: 20px;
+}
+
+@keyframes glowMove {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
