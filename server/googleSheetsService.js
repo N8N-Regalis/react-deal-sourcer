@@ -9,18 +9,20 @@ const SUBMISSIONS_SHEET_ID = '1vRdVw3NywawevVlWVc9Rlu0m9PGcVb--6tVjkDLH4bg'
 
 // Initialize Google Sheets API
 let auth
-if (process.env.GOOGLE_SERVICE_ACCOUNT_KEY) {
-  // Parse JSON from environment variable
-  const keyContent = process.env.GOOGLE_SERVICE_ACCOUNT_KEY
-  const credentials = typeof keyContent === 'string' ? JSON.parse(keyContent) : keyContent
+const keyEnv = process.env.GOOGLE_SERVICE_ACCOUNT_KEY
+
+if (keyEnv && !keyEnv.startsWith('./') && !keyEnv.startsWith('/')) {
+  // Parse JSON from environment variable (for production/Render)
+  const credentials = typeof keyEnv === 'string' ? JSON.parse(keyEnv) : keyEnv
   auth = new google.auth.GoogleAuth({
     credentials: credentials,
     scopes: ['https://www.googleapis.com/auth/spreadsheets'],
   })
 } else {
-  // Fallback to file (for local development)
+  // Use file (for local development)
+  const keyFile = keyEnv && (keyEnv.startsWith('./') || keyEnv.startsWith('/')) ? keyEnv : './react-deal-sourcer-45126b11537a.json'
   auth = new google.auth.GoogleAuth({
-    keyFile: './react-deal-sourcer-45126b11537a.json',
+    keyFile: keyFile,
     scopes: ['https://www.googleapis.com/auth/spreadsheets'],
   })
 }
