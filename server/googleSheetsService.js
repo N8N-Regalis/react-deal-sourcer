@@ -8,10 +8,22 @@ const PARTNERS_SHEET_ID = '1j0nSI9PPX1lhgwEQzmATtD8AtsXny11JysV77tVXMhE'
 const SUBMISSIONS_SHEET_ID = '1vRdVw3NywawevVlWVc9Rlu0m9PGcVb--6tVjkDLH4bg'
 
 // Initialize Google Sheets API
-const auth = new google.auth.GoogleAuth({
-  keyFile: process.env.GOOGLE_SERVICE_ACCOUNT_KEY,
-  scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-})
+let auth
+if (process.env.GOOGLE_SERVICE_ACCOUNT_KEY) {
+  // Parse JSON from environment variable
+  const keyContent = process.env.GOOGLE_SERVICE_ACCOUNT_KEY
+  const credentials = typeof keyContent === 'string' ? JSON.parse(keyContent) : keyContent
+  auth = new google.auth.GoogleAuth({
+    credentials: credentials,
+    scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+  })
+} else {
+  // Fallback to file (for local development)
+  auth = new google.auth.GoogleAuth({
+    keyFile: './react-deal-sourcer-45126b11537a.json',
+    scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+  })
+}
 
 const sheets = google.sheets({ version: 'v4', auth })
 
