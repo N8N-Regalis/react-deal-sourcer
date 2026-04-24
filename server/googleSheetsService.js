@@ -82,7 +82,7 @@ export async function saveData(data) {
       // Add headers
       await sheets.spreadsheets.values.update({
         spreadsheetId: SUBMISSIONS_SHEET_ID,
-        range: 'Submissions!A1:H1',
+        range: 'Submissions!A1:K1',
         valueInputOption: 'RAW',
         requestBody: {
           values: [
@@ -93,6 +93,9 @@ export async function saveData(data) {
               'Partner Name',
               'Listing Name',
               'Listing Link',
+              'Brokerage',
+              'Broker Name',
+              'Broker Email',
               'Source Type',
               'Notes',
             ],
@@ -101,15 +104,23 @@ export async function saveData(data) {
       })
     }
 
-    // Get current counter from a separate sheet or use a different method
-    // For simplicity, we'll read the last row to determine the next ID
+    // Get the last submission ID from the sheet
     const lastRowResponse = await sheets.spreadsheets.values.get({
       spreadsheetId: SUBMISSIONS_SHEET_ID,
       range: 'Submissions!A:A',
     })
 
     const rows = lastRowResponse.data.values || []
-    const counter = rows.length // Simple counter based on row count
+    let counter = 1
+
+    // Skip header row and find the last valid ID
+    if (rows.length > 1) {
+      const lastId = rows[rows.length - 1][0] // Get last row's ID
+      if (lastId && lastId.startsWith('SUB-')) {
+        const lastNumber = parseInt(lastId.replace('SUB-', ''), 10)
+        counter = lastNumber + 1
+      }
+    }
 
     // Format ID: SUB-000001
     const id = 'SUB-' + String(counter).padStart(6, '0')
@@ -129,7 +140,7 @@ export async function saveData(data) {
     // Append new row
     await sheets.spreadsheets.values.append({
       spreadsheetId: SUBMISSIONS_SHEET_ID,
-      range: 'Submissions!A:H',
+      range: 'Submissions!A:K',
       valueInputOption: 'RAW',
       requestBody: {
         values: [
@@ -140,6 +151,9 @@ export async function saveData(data) {
             data.partner,
             data.listingName,
             data.listingLink,
+            data.brokerage || '',
+            data.brokerName || '',
+            data.brokerEmail || '',
             data.sourceType,
             data.notes || '',
           ],
@@ -159,7 +173,7 @@ export async function getUserSubmissions(email) {
   try {
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: SUBMISSIONS_SHEET_ID,
-      range: 'Submissions!A:H',
+      range: 'Submissions!A:K',
     })
 
     const rows = response.data.values || []
@@ -178,8 +192,11 @@ export async function getUserSubmissions(email) {
       partner: row[3],
       listingName: row[4],
       listingLink: row[5],
-      sourceType: row[6],
-      notes: row[7],
+      brokerage: row[6],
+      brokerName: row[7],
+      brokerEmail: row[8],
+      sourceType: row[9],
+      notes: row[10],
     }))
 
     return { submissions }

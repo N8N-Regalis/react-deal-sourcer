@@ -44,7 +44,7 @@ const SignIn = ({ onSignIn }) => {
 
   return (
     <div className="card sign-in-card">
-      <h1 className="sign-in-title">Deal Sourcer</h1>
+      <h1 className="sign-in-title">Deal Source Tracker</h1>
       <h2>Sign In Required</h2>
       <p>Please sign in with your Google account to access the Deal Sourcer Form.</p>
       <div ref={googleButtonRef}></div>

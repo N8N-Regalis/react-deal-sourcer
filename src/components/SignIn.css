@@ -44,3 +44,26 @@
     background-position: 0% 50%;
   }
 }
+
+.domain-highlight {
+  color: #60a5fa;
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.sign-out-button {
+  background: linear-gradient(90deg, #60a5fa, #a78bfa);
+  border: none;
+  color: white;
+  padding: 10px 24px;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  margin-top: 20px;
+}
+
+.sign-out-button:hover {
+  opacity: 0.9;
+}

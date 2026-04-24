@@ -6,6 +6,9 @@ const Form = ({ partners, userEmail, onSubmit, onTogglePanel, panelVisible }) =>
   const [partner, setPartner] = useState(null)
   const [listingName, setListingName] = useState('')
   const [listingLink, setListingLink] = useState('')
+  const [brokerage, setBrokerage] = useState('')
+  const [brokerName, setBrokerName] = useState('')
+  const [brokerEmail, setBrokerEmail] = useState('')
   const [sourceType, setSourceType] = useState('')
   const [notes, setNotes] = useState('')
   const [status, setStatus] = useState('')
@@ -20,13 +23,8 @@ const Form = ({ partners, userEmail, onSubmit, onTogglePanel, panelVisible }) =>
   const handleSubmit = async (e) => {
     e.preventDefault()
 
-    if (!partner || !listingName || !listingLink || !sourceType) {
+    if (!partner || !listingName || !listingLink || !brokerEmail || !sourceType) {
       alert('Please fill all required fields')
-      return
-    }
-
-    if (sourceType === 'Old' && !notes) {
-      alert('Notes required for Old source')
       return
     }
 
@@ -38,6 +36,9 @@ const Form = ({ partners, userEmail, onSubmit, onTogglePanel, panelVisible }) =>
         partner: partner.value,
         listingName,
         listingLink,
+        brokerage,
+        brokerName,
+        brokerEmail,
         sourceType,
         notes,
       })
@@ -48,6 +49,9 @@ const Form = ({ partners, userEmail, onSubmit, onTogglePanel, panelVisible }) =>
       setPartner(null)
       setListingName('')
       setListingLink('')
+      setBrokerage('')
+      setBrokerName('')
+      setBrokerEmail('')
       setSourceType('')
       setNotes('')
     } catch (error) {
@@ -90,6 +94,30 @@ const Form = ({ partners, userEmail, onSubmit, onTogglePanel, panelVisible }) =>
           disabled={isSubmitting}
         />
 
+        <label>Brokerage</label>
+        <input
+          type="text"
+          value={brokerage}
+          onChange={(e) => setBrokerage(e.target.value)}
+          disabled={isSubmitting}
+        />
+
+        <label>Broker Name</label>
+        <input
+          type="text"
+          value={brokerName}
+          onChange={(e) => setBrokerName(e.target.value)}
+          disabled={isSubmitting}
+        />
+
+        <label>Broker Email</label>
+        <input
+          type="text"
+          value={brokerEmail}
+          onChange={(e) => setBrokerEmail(e.target.value)}
+          disabled={isSubmitting}
+        />
+
         <label>Source Type</label>
         <select
           value={sourceType}
@@ -97,20 +125,16 @@ const Form = ({ partners, userEmail, onSubmit, onTogglePanel, panelVisible }) =>
           disabled={isSubmitting}
         >
           <option value="" disabled>-- Select Source Type --</option>
-          <option value="Old">Old</option>
+          <option value="Resource">Resource</option>
           <option value="New">New</option>
         </select>
 
-        {sourceType === 'Old' && (
-          <div className="notes-container">
-            <label>Notes</label>
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              disabled={isSubmitting}
-            />
-          </div>
-        )}
+        <label>Notes</label>
+        <textarea
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          disabled={isSubmitting}
+        />
 
         <label>User Email</label>
         <input type="text" value={userEmail} readOnly />

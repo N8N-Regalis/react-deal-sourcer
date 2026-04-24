@@ -41,6 +41,10 @@ function App() {
     localStorage.removeItem('userEmail')
   }
 
+  const isAuthorizedDomain = (email) => {
+    return email.endsWith('@regaliscapital.com')
+  }
+
   const loadPartners = async () => {
     try {
       const apiUrl = import.meta.env.VITE_API_URL || '/api'
@@ -96,6 +100,12 @@ function App() {
       <div className="container">
         {!isSignedIn ? (
           <SignIn onSignIn={handleSignIn} />
+        ) : !isAuthorizedDomain(userEmail) ? (
+          <div className="card sign-in-card">
+            <h2>Access Denied</h2>
+            <p>You must sign in with a <span className="domain-highlight">@regaliscapital.com</span> email address to access this form.</p>
+            <button className="sign-out-button" onClick={handleSignOut}>Sign Out</button>
+          </div>
         ) : (
           <>
             <Form
