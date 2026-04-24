@@ -14,18 +14,31 @@ function App() {
   const [isSignedIn, setIsSignedIn] = useState(false)
 
   useEffect(() => {
+    // Check for saved authentication on mount
+    const savedEmail = localStorage.getItem('userEmail')
+    if (savedEmail) {
+      setUserEmail(savedEmail)
+      setIsSignedIn(true)
+    }
     loadPartners()
-    loadSubmissions()
   }, [])
+
+  useEffect(() => {
+    if (isSignedIn && userEmail) {
+      loadSubmissions()
+    }
+  }, [isSignedIn, userEmail])
 
   const handleSignIn = (email) => {
     setUserEmail(email)
     setIsSignedIn(true)
+    localStorage.setItem('userEmail', email)
   }
 
   const handleSignOut = () => {
     setUserEmail('')
     setIsSignedIn(false)
+    localStorage.removeItem('userEmail')
   }
 
   const loadPartners = async () => {
