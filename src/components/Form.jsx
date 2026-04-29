@@ -1,35 +1,47 @@
-import React, { useState } from 'react'
-import Select from 'react-select'
-import './Form.css'
+import React, { useState } from "react";
+import Select from "react-select";
+import "./Form.css";
 
-const Form = ({ partners, userEmail, onSubmit, onTogglePanel, panelVisible }) => {
-  const [partner, setPartner] = useState(null)
-  const [listingName, setListingName] = useState('')
-  const [listingLink, setListingLink] = useState('')
-  const [brokerage, setBrokerage] = useState('')
-  const [brokerName, setBrokerName] = useState('')
-  const [brokerEmail, setBrokerEmail] = useState('')
-  const [sourceType, setSourceType] = useState('')
-  const [notes, setNotes] = useState('')
-  const [status, setStatus] = useState('')
-  const [isSubmitting, setIsSubmitting] = useState(false)
+const Form = ({
+  partners,
+  userEmail,
+  onSubmit,
+  onTogglePanel,
+  panelVisible,
+}) => {
+  const [partner, setPartner] = useState(null);
+  const [listingName, setListingName] = useState("");
+  const [listingLink, setListingLink] = useState("");
+  const [brokerage, setBrokerage] = useState("");
+  const [brokerName, setBrokerName] = useState("");
+  const [brokerEmail, setBrokerEmail] = useState("");
+  const [sourceType, setSourceType] = useState("");
+  const [notes, setNotes] = useState("");
+  const [status, setStatus] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const partnerOptions = partners.map(p => ({ value: p, label: p }))
+  const partnerOptions = partners.map((p) => ({ value: p, label: p }));
 
   const handleSourceTypeChange = (e) => {
-    setSourceType(e.target.value)
-  }
+    setSourceType(e.target.value);
+  };
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
+    e.preventDefault();
 
-    if (!partner || !listingName || !listingLink || !brokerEmail || !sourceType) {
-      alert('Please fill all required fields')
-      return
+    if (
+      !partner ||
+      !listingName ||
+      !listingLink ||
+      !brokerEmail ||
+      !sourceType
+    ) {
+      alert("Please fill all required fields");
+      return;
     }
 
-    setIsSubmitting(true)
-    setStatus('Submitting...')
+    setIsSubmitting(true);
+    setStatus("Submitting...");
 
     try {
       const result = await onSubmit({
@@ -41,26 +53,26 @@ const Form = ({ partners, userEmail, onSubmit, onTogglePanel, panelVisible }) =>
         brokerEmail,
         sourceType,
         notes,
-      })
+      });
 
-      setStatus(`Saved ${result.id}`)
+      setStatus(`Saved ${result.id}`);
 
       // Reset form
-      setPartner(null)
-      setListingName('')
-      setListingLink('')
-      setBrokerage('')
-      setBrokerName('')
-      setBrokerEmail('')
-      setSourceType('')
-      setNotes('')
+      setPartner(null);
+      setListingName("");
+      setListingLink("");
+      setBrokerage("");
+      setBrokerName("");
+      setBrokerEmail("");
+      setSourceType("");
+      setNotes("");
     } catch (error) {
-      alert('Error saving data')
-      setStatus('')
+      alert("Error saving data");
+      setStatus("");
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   return (
     <div className="card">
@@ -124,8 +136,10 @@ const Form = ({ partners, userEmail, onSubmit, onTogglePanel, panelVisible }) =>
           onChange={handleSourceTypeChange}
           disabled={isSubmitting}
         >
-          <option value="" disabled>-- Select Source Type --</option>
-          <option value="Resource">Resourced</option>
+          <option value="" disabled>
+            -- Select Source Type --
+          </option>
+          <option value="Resourced">Resourced</option>
           <option value="New">New</option>
         </select>
 
@@ -140,19 +154,11 @@ const Form = ({ partners, userEmail, onSubmit, onTogglePanel, panelVisible }) =>
         <input type="text" value={userEmail} readOnly />
 
         <div className="button-row">
-          <button
-            type="submit"
-            className="submit-btn"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? 'Submitting...' : 'Submit'}
+          <button type="submit" className="submit-btn" disabled={isSubmitting}>
+            {isSubmitting ? "Submitting..." : "Submit"}
           </button>
-          <button
-            type="button"
-            className="glass-btn"
-            onClick={onTogglePanel}
-          >
-            {panelVisible ? 'Hide Sourced Deals' : 'Show Sourced Deals'}
+          <button type="button" className="glass-btn" onClick={onTogglePanel}>
+            {panelVisible ? "Hide Sourced Deals" : "Show Sourced Deals"}
           </button>
         </div>
 
@@ -163,7 +169,7 @@ const Form = ({ partners, userEmail, onSubmit, onTogglePanel, panelVisible }) =>
         )}
       </form>
     </div>
-  )
-}
+  );
+};
 
-export default Form
+export default Form;
