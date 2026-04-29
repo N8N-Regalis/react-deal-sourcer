@@ -1,7 +1,7 @@
 import express from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
-import { getPartners, getUserEmail, saveData, getUserSubmissions } from './googleSheetsService.js'
+import { getPartners, getUserEmail, saveData, getUserSubmissions, updateSubmission } from './googleSheetsService.js'
 
 dotenv.config()
 
@@ -53,6 +53,16 @@ app.get('/api/submissions', async (req, res) => {
   } catch (error) {
     console.error('Error fetching submissions:', error)
     res.json({ submissions: [] })
+  }
+})
+
+app.put('/api/update-submission', async (req, res) => {
+  try {
+    const result = await updateSubmission(req.body)
+    res.json(result)
+  } catch (error) {
+    console.error('Error updating submission:', error)
+    res.status(500).json({ error: 'Failed to update submission' })
   }
 })
 

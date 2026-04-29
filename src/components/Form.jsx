@@ -125,7 +125,7 @@ const Form = ({ partners, userEmail, onSubmit, onTogglePanel, panelVisible }) =>
           disabled={isSubmitting}
         >
           <option value="" disabled>-- Select Source Type --</option>
-          <option value="Resource">Resource</option>
+          <option value="Resource">Resourced</option>
           <option value="New">New</option>
         </select>
 
