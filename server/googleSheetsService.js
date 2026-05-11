@@ -85,7 +85,7 @@ export async function saveData(data) {
       // Add headers
       await sheets.spreadsheets.values.update({
         spreadsheetId: SUBMISSIONS_SHEET_ID,
-        range: "Submissions!A1:K1",
+        range: "Submissions!A1:O1",
         valueInputOption: "RAW",
         requestBody: {
           values: [
@@ -101,6 +101,10 @@ export async function saveData(data) {
               "Broker Email",
               "Source Type",
               "Notes",
+              "CIM Received",
+              "Status",
+              "Due Date",
+              "Modified Date",
             ],
           ],
         },
@@ -143,26 +147,33 @@ export async function saveData(data) {
       .replace(/(\d+)\/(\d+)\/(\d+), (\d+):(\d+):(\d+)/, "$3-$1-$2 $4:$5:$6");
 
     // Append new row
+    const rowData = [
+      id,
+      timestamp,
+      data.user,
+      data.partner,
+      data.listingName,
+      data.listingLink,
+      data.brokerage || "",
+      data.brokerName || "",
+      data.brokerEmail || "",
+      data.sourceType,
+      data.notes || "",
+      "FALSE", // CIM Received
+      "", // Status
+      "", // Due Date
+      "", // Modified Date
+    ];
+    
+    console.log("Submitting data to Google Sheets:", rowData);
+    console.log("CIM Received value (index 11):", rowData[11]);
+    
     await sheets.spreadsheets.values.append({
       spreadsheetId: SUBMISSIONS_SHEET_ID,
-      range: "Submissions!A:K",
+      range: "Submissions!A:O",
       valueInputOption: "RAW",
       requestBody: {
-        values: [
-          [
-            id,
-            timestamp,
-            data.user,
-            data.partner,
-            data.listingName,
-            data.listingLink,
-            data.brokerage || "",
-            data.brokerName || "",
-            data.brokerEmail || "",
-            data.sourceType,
-            data.notes || "",
-          ],
-        ],
+        values: [rowData],
       },
     });
 
@@ -178,7 +189,7 @@ export async function getUserSubmissions(email) {
   try {
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: SUBMISSIONS_SHEET_ID,
-      range: "Submissions!A:M",
+      range: "Submissions!A:O",
     });
 
     const rows = response.data.values || [];
@@ -194,6 +205,7 @@ export async function getUserSubmissions(email) {
 
     const submissions = filtered.map((row) => ({
       submissionId: row[0],
+      timestamp: row[1],
       partner: row[3],
       listingName: row[4],
       listingLink: row[5],
@@ -204,6 +216,8 @@ export async function getUserSubmissions(email) {
       notes: row[10],
       cimReceived: row[11],
       status: row[12],
+      dueDate: row[13],
+      modifiedDate: row[14],
     }));
 
     return { submissions };
@@ -217,13 +231,16 @@ export async function getUserSubmissions(email) {
 // Update Submission
 export async function updateSubmission(data) {
   try {
+    console.log("Update submission data received:", data);
+    
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: SUBMISSIONS_SHEET_ID,
-      range: "Submissions!A:M",
+      range: "Submissions!A:O",
     });
 
     const rows = response.data.values || [];
-    const headerRow = rows[0];
+    console.log("Sheet rows retrieved:", rows.length);
+    console.log("Header row:", rows[0]);
 
     // Find the row index for the submission ID
     const rowIndex = rows.findIndex(
@@ -234,16 +251,55 @@ export async function updateSubmission(data) {
       throw new Error("Submission not found");
     }
 
-    // Update the specific columns (L for CIM, M for Status, K for Notes)
-    const updateRange = `Submissions!L${rowIndex + 1}:M${rowIndex + 1}`;
+    console.log("Found submission at row index:", rowIndex, "row data:", rows[rowIndex]);
+    console.log("Row length:", rows[rowIndex].length);
+
+    // Ensure the row has enough columns (at least 15 for A-O)
+    const currentRow = rows[rowIndex];
+    while (currentRow.length < 15) {
+      currentRow.push(''); // Add empty columns if missing
+    }
+
+    // Format current timestamp in EST for Modified Date
+    const modifiedDate = new Date()
+      .toLocaleString("en-US", {
+        timeZone: "America/New_York",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: false,
+      })
+      .replace(/(\d+)\/(\d+)\/(\d+), (\d+):(\d+):(\d+)/, "$3-$1-$2 $4:$5:$6");
+
+    console.log("Updating with data:", {
+      cimReceived: data.cimReceived,
+      status: data.status,
+      dueDate: data.dueDate,
+      modifiedDate: modifiedDate
+    });
+
+    // Update CIM, Status, Due Date, and Modified Date (columns L-O)
+    const updateRange = `Submissions!L${rowIndex + 1}:O${rowIndex + 1}`;
+    console.log("Update range:", updateRange);
+    
     await sheets.spreadsheets.values.update({
       spreadsheetId: SUBMISSIONS_SHEET_ID,
       range: updateRange,
       valueInputOption: "RAW",
       requestBody: {
-        values: [[data.cimReceived, data.status]],
+        values: [[
+          data.cimReceived, 
+          data.status, 
+          data.dueDate || '',
+          modifiedDate
+        ]],
       },
     });
+
+    console.log("Columns L-O updated successfully");
 
     // Update notes in column K
     await sheets.spreadsheets.values.update({

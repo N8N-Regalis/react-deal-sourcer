@@ -141,6 +141,7 @@ const Form = ({
           </option>
           <option value="Resourced">Resourced</option>
           <option value="New">New</option>
+          <option value="Axed">Axed</option>
         </select>
 
         <label>Notes</label>

@@ -16,6 +16,18 @@ const Panel = ({ submissions, onRefresh }) => {
     'Axed'
   ]
 
+  const isDueToday = (dueDate) => {
+    if (!dueDate) return false;
+    
+    // Get today's date in EST
+    const today = new Date();
+    const todayEST = new Date(today.toLocaleString("en-US", {timeZone: "America/New_York"}));
+    const todayString = todayEST.toISOString().split('T')[0]; // YYYY-MM-DD format
+    
+    // Check if today's date equals due date OR is past the due date
+    return dueDate <= todayString;
+  }
+
   const toggleRow = (submissionId) => {
     const newExpanded = new Set(expandedRows)
     if (newExpanded.has(submissionId)) {
@@ -31,7 +43,8 @@ const Panel = ({ submissions, onRefresh }) => {
     setEditFormData({
       cimReceived: submission.cimReceived || 'FALSE',
       status: submission.status || '',
-      notes: submission.notes || ''
+      notes: submission.notes || '',
+      dueDate: submission.dueDate || ''
     })
   }
 
@@ -51,7 +64,8 @@ const Panel = ({ submissions, onRefresh }) => {
           submissionId: editingRow,
           cimReceived: editFormData.cimReceived,
           status: editFormData.status,
-          notes: editFormData.notes
+          notes: editFormData.notes,
+          dueDate: editFormData.dueDate
         })
       })
 
@@ -86,7 +100,7 @@ const Panel = ({ submissions, onRefresh }) => {
         <table>
           <thead>
             <tr>
-              <th>ID</th>
+              <th>Entry Date</th>
               <th>Partner</th>
               <th>Listing</th>
               <th>Type</th>
@@ -105,10 +119,24 @@ const Panel = ({ submissions, onRefresh }) => {
               submissions.map((submission) => (
                 <React.Fragment key={submission.submissionId}>
                   <tr 
-                    className="clickable-row"
+                    className={`clickable-row ${isDueToday(submission.dueDate) ? 'due-today' : ''}`}
                     onClick={() => toggleRow(submission.submissionId)}
                   >
-                    <td className="submission-id">{submission.submissionId}</td>
+                    <td className="submission-id">
+                      {submission.timestamp ? 
+                        (() => {
+                          try {
+                            // Handle Google Sheets timestamp format (YYYY-MM-DD HH:MM:SS)
+                            const dateStr = submission.timestamp.trim();
+                            // Extract just the date part if it's in YYYY-MM-DD HH:MM:SS format
+                            const dateOnly = dateStr.split(' ')[0];
+                            return new Date(dateOnly).toLocaleDateString('en-CA');
+                          } catch (error) {
+                            console.error('Error parsing timestamp:', submission.timestamp, error);
+                            return 'Invalid Date';
+                          }
+                        })() : 'N/A'}
+                    </td>
                     <td>{submission.partner}</td>
                     <td>{submission.listingName}</td>
                     <td>{submission.sourceType}</td>
@@ -175,6 +203,14 @@ const Panel = ({ submissions, onRefresh }) => {
                                     rows="3"
                                   />
                                 </div>
+                                <div className="edit-item">
+                                  <label>Due Date:</label>
+                                  <input
+                                    type="date"
+                                    value={editFormData.dueDate}
+                                    onChange={(e) => handleEditChange('dueDate', e.target.value)}
+                                  />
+                                </div>
                               </div>
                               <div className="edit-actions">
                                 <button className="save-btn" onClick={saveEdit}>
@@ -187,6 +223,10 @@ const Panel = ({ submissions, onRefresh }) => {
                             </div>
                           ) : (
                             <div className="deal-details">
+                            <div className="detail-item">
+                              <span className="detail-label">Submission ID:</span>
+                              <span className="detail-value">{submission.submissionId || 'N/A'}</span>
+                            </div>
                             <div className="detail-item">
                               <span className="detail-label">Brokerage:</span>
                               <span className="detail-value">{submission.brokerage || 'N/A'}</span>
@@ -218,6 +258,14 @@ const Panel = ({ submissions, onRefresh }) => {
                             <div className="detail-item">
                               <span className="detail-label">Notes:</span>
                               <span className="detail-value">{submission.notes || 'N/A'}</span>
+                            </div>
+                            <div className="detail-item">
+                              <span className="detail-label">Due Date:</span>
+                              <span className="detail-value">{submission.dueDate || 'N/A'}</span>
+                            </div>
+                            <div className="detail-item">
+                              <span className="detail-label">Modified Date:</span>
+                              <span className="detail-value">{submission.modifiedDate || 'N/A'}</span>
                             </div>
                           </div>
                           )}
