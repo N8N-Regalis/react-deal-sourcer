@@ -85,7 +85,7 @@ export async function saveData(data) {
       // Add headers
       await sheets.spreadsheets.values.update({
         spreadsheetId: SUBMISSIONS_SHEET_ID,
-        range: "Submissions!A1:O1",
+        range: "Submissions!A1:P1",
         valueInputOption: "RAW",
         requestBody: {
           values: [
@@ -105,6 +105,7 @@ export async function saveData(data) {
               "Status",
               "Due Date",
               "Modified Date",
+              "Sourcer Email",
             ],
           ],
         },
@@ -163,6 +164,7 @@ export async function saveData(data) {
       "", // Status
       "", // Due Date
       "", // Modified Date
+      data.user, // Sourcer Email (same as User Email)
     ];
     
     console.log("Submitting data to Google Sheets:", rowData);
@@ -170,7 +172,7 @@ export async function saveData(data) {
     
     await sheets.spreadsheets.values.append({
       spreadsheetId: SUBMISSIONS_SHEET_ID,
-      range: "Submissions!A:O",
+      range: "Submissions!A:P",
       valueInputOption: "RAW",
       requestBody: {
         values: [rowData],
@@ -189,7 +191,7 @@ export async function getUserSubmissions(email) {
   try {
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: SUBMISSIONS_SHEET_ID,
-      range: "Submissions!A:O",
+      range: "Submissions!A:P",
     });
 
     const rows = response.data.values || [];
@@ -218,6 +220,7 @@ export async function getUserSubmissions(email) {
       status: row[12],
       dueDate: row[13],
       modifiedDate: row[14],
+      sourcerEmail: row[15],
     }));
 
     return { submissions };
@@ -235,7 +238,7 @@ export async function updateSubmission(data) {
     
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: SUBMISSIONS_SHEET_ID,
-      range: "Submissions!A:O",
+      range: "Submissions!A:P",
     });
 
     const rows = response.data.values || [];
@@ -254,9 +257,9 @@ export async function updateSubmission(data) {
     console.log("Found submission at row index:", rowIndex, "row data:", rows[rowIndex]);
     console.log("Row length:", rows[rowIndex].length);
 
-    // Ensure the row has enough columns (at least 15 for A-O)
+    // Ensure the row has enough columns (at least 16 for A-P)
     const currentRow = rows[rowIndex];
-    while (currentRow.length < 15) {
+    while (currentRow.length < 16) {
       currentRow.push(''); // Add empty columns if missing
     }
 

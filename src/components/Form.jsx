@@ -19,6 +19,7 @@ const Form = ({
   const [notes, setNotes] = useState("");
   const [status, setStatus] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState({});
 
   const partnerOptions = partners.map((p) => ({ value: p, label: p }));
 
@@ -29,16 +30,20 @@ const Form = ({
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (
-      !partner ||
-      !listingName ||
-      !listingLink ||
-      !brokerEmail ||
-      !sourceType
-    ) {
+    const errors = {};
+    if (!partner) errors.partner = true;
+    if (!listingName.trim()) errors.listingName = true;
+    if (!listingLink.trim()) errors.listingLink = true;
+    if (!brokerEmail.trim()) errors.brokerEmail = true;
+    if (!sourceType) errors.sourceType = true;
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
       alert("Please fill all required fields");
       return;
     }
+
+    setFieldErrors({});
 
     setIsSubmitting(true);
     setStatus("Submitting...");
@@ -79,31 +84,58 @@ const Form = ({
       <h2>Deal Sourcing Form</h2>
 
       <form onSubmit={handleSubmit}>
-        <label>Partner Name</label>
+        <label className={fieldErrors.partner ? "error" : ""}>Partner Name</label>
         <Select
           value={partner}
-          onChange={setPartner}
+          onChange={(selectedOption) => {
+            setPartner(selectedOption);
+            if (fieldErrors.partner) {
+              setFieldErrors(prev => ({ ...prev, partner: false }));
+            }
+          }}
           options={partnerOptions}
           placeholder="-- Select Partner --"
           className="react-select-container"
           classNamePrefix="react-select"
           isDisabled={isSubmitting}
+          styles={{
+            control: (baseStyles, state) => ({
+              ...baseStyles,
+              borderColor: fieldErrors.partner ? '#dc2626' : baseStyles.borderColor,
+              boxShadow: fieldErrors.partner ? '0 0 0 2px rgba(220, 38, 38, 0.25)' : baseStyles.boxShadow,
+              '&:hover': {
+                borderColor: fieldErrors.partner ? '#dc2626' : baseStyles['&:hover']?.borderColor,
+              },
+            }),
+          }}
         />
 
-        <label>Listing Name</label>
+        <label className={fieldErrors.listingName ? "error" : ""}>Listing Name</label>
         <input
           type="text"
           value={listingName}
-          onChange={(e) => setListingName(e.target.value)}
+          onChange={(e) => {
+            setListingName(e.target.value);
+            if (fieldErrors.listingName) {
+              setFieldErrors(prev => ({ ...prev, listingName: false }));
+            }
+          }}
           disabled={isSubmitting}
+          className={fieldErrors.listingName ? "error" : ""}
         />
 
-        <label>Listing Link</label>
+        <label className={fieldErrors.listingLink ? "error" : ""}>Listing Link</label>
         <input
           type="text"
           value={listingLink}
-          onChange={(e) => setListingLink(e.target.value)}
+          onChange={(e) => {
+            setListingLink(e.target.value);
+            if (fieldErrors.listingLink) {
+              setFieldErrors(prev => ({ ...prev, listingLink: false }));
+            }
+          }}
           disabled={isSubmitting}
+          className={fieldErrors.listingLink ? "error" : ""}
         />
 
         <label>Brokerage</label>
@@ -122,26 +154,37 @@ const Form = ({
           disabled={isSubmitting}
         />
 
-        <label>Broker Email</label>
+        <label className={fieldErrors.brokerEmail ? "error" : ""}>Broker Email</label>
         <input
           type="text"
           value={brokerEmail}
-          onChange={(e) => setBrokerEmail(e.target.value)}
+          onChange={(e) => {
+            setBrokerEmail(e.target.value);
+            if (fieldErrors.brokerEmail) {
+              setFieldErrors(prev => ({ ...prev, brokerEmail: false }));
+            }
+          }}
           disabled={isSubmitting}
+          className={fieldErrors.brokerEmail ? "error" : ""}
         />
 
-        <label>Source Type</label>
+        <label className={fieldErrors.sourceType ? "error" : ""}>Source Type</label>
         <select
           value={sourceType}
-          onChange={handleSourceTypeChange}
+          onChange={(e) => {
+            handleSourceTypeChange(e);
+            if (fieldErrors.sourceType) {
+              setFieldErrors(prev => ({ ...prev, sourceType: false }));
+            }
+          }}
           disabled={isSubmitting}
+          className={fieldErrors.sourceType ? "error" : ""}
         >
           <option value="" disabled>
             -- Select Source Type --
           </option>
           <option value="Resourced">Resourced</option>
           <option value="New">New</option>
-          <option value="Axed">Axed</option>
         </select>
 
         <label>Notes</label>

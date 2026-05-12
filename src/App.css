@@ -26,6 +26,16 @@
 }
 
 /* Responsive Design */
+@media (max-width: 1024px) and (min-width: 769px) {
+  .container {
+    flex-direction: column;
+    width: 95%;
+    gap: 20px;
+    margin: 60px auto 0 auto;
+    align-items: center;
+  }
+}
+
 @media (max-width: 768px) {
   .body {
     align-items: flex-start;
@@ -38,6 +48,7 @@
     max-width: 100%;
     padding: 0 15px;
     box-sizing: border-box;
+    align-items: flex-start;
   }
 }
 
