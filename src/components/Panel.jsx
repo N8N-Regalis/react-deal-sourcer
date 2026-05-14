@@ -441,8 +441,8 @@ const Panel = ({ submissions, onRefresh }) => {
                   </th>
                 )
               })}
-              <th>Link</th>
-              <th>Edit</th>
+              <th className="action-header">Link</th>
+              <th className="action-header">Edit</th>
             </tr>
           </thead>
           <tbody>

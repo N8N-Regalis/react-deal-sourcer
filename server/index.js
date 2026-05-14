@@ -1,7 +1,7 @@
 import express from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
-import { getPartners, getUserEmail, saveData, getUserSubmissions, updateSubmission } from './googleSheetsService.js'
+import { getPartners, getUserEmail, saveData, getUserSubmissions, updateSubmission, checkDuplicateSubmission } from './googleSheetsService.js'
 
 dotenv.config()
 
@@ -34,6 +34,14 @@ app.get('/api/user', async (req, res) => {
 
 app.post('/api/submit', async (req, res) => {
   try {
+    const { partner, listingLink } = req.body
+    
+    // Check if partner and listing link combination already exists
+    const exists = await checkDuplicateSubmission(partner, listingLink)
+    if (exists) {
+      return res.status(409).json({ error: 'This partner and listing link combination already exists' })
+    }
+    
     const result = await saveData(req.body)
     res.json(result)
   } catch (error) {

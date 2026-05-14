@@ -50,7 +50,7 @@ const Form = ({
 
     try {
       const result = await onSubmit({
-        partner: partner.value,
+        partner: partner.value.replace(/[❗⭐]/g, ''),
         listingName,
         listingLink,
         brokerage,
@@ -72,7 +72,11 @@ const Form = ({
       setSourceType("");
       setNotes("");
     } catch (error) {
-      alert("Error saving data");
+      if (error.message === 'This partner and listing link combination already exists') {
+        alert("This partner and listing link combination already exists in the Submissions sheet.");
+      } else {
+        alert("Error saving data");
+      }
       setStatus("");
     } finally {
       setIsSubmitting(false);

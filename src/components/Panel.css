@@ -149,8 +149,10 @@ thead th {
   z-index: 2;
 }
 
+
 .filterable-header {
-  position: relative;
+  position: sticky;
+  top: 0;
 }
 
 .header-content {

@@ -53,6 +53,51 @@ export async function getUserEmail() {
   return process.env.USER_EMAIL || "";
 }
 
+// Check if partner and listing link combination already exists in Submissions sheet
+export async function checkDuplicateSubmission(partnerName, listingLink) {
+  try {
+    // Fetch only columns D (Partner Name) and F (Listing Link) to reduce data transfer
+    const response = await sheets.spreadsheets.values.get({
+      spreadsheetId: SUBMISSIONS_SHEET_ID,
+      range: "Submissions!D:F",
+    });
+
+    const rows = response.data.values || [];
+
+    // Skip header row
+    const dataRows = rows.slice(1);
+
+    // Clean partner name by removing special characters
+    const cleanedPartnerName = partnerName.replace(/[❗⭐]/g, '').trim();
+
+    console.log("Checking for duplicate submission:");
+    console.log("Partner Name (cleaned):", cleanedPartnerName);
+    console.log("Listing Link:", listingLink);
+    console.log("Total rows in sheet:", dataRows.length);
+
+    // Check if both partner name (column D, index 0 in this range) and listing link (column F, index 2 in this range) match
+    const exists = dataRows.some((row) => {
+      const existingPartner = String(row[0] || "").replace(/[❗⭐]/g, '').trim();
+      const existingLink = String(row[2] || "").trim();
+      
+      const partnerMatch = existingPartner === cleanedPartnerName;
+      const linkMatch = existingLink === listingLink.trim();
+      
+      console.log("Comparing:", existingPartner, "with", cleanedPartnerName, "=>", partnerMatch);
+      console.log("Comparing:", existingLink, "with", listingLink.trim(), "=>", linkMatch);
+      
+      return partnerMatch && linkMatch;
+    });
+
+    console.log("Duplicate found:", exists);
+    return exists;
+  } catch (error) {
+    console.error("Error checking duplicate submission:", error);
+    // If sheet doesn't exist yet, return false
+    return false;
+  }
+}
+
 // Save Data to Submissions sheet
 export async function saveData(data) {
   try {

@@ -81,12 +81,17 @@ function App() {
         },
         body: JSON.stringify({ ...formData, user: userEmail }),
       });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to save data');
+      }
+      
       const data = await response.json();
       loadSubmissions();
       return data;
     } catch (error) {
       console.error("Error submitting data:", error);
-      alert("Error saving data");
       throw error;
     }
   };

@@ -165,6 +165,10 @@ button {
   color: #6b7280 !important;
 }
 
+.react-select__input {
+  color: #e5e7eb !important;
+}
+
 .react-select__menu {
   background: rgba(17, 24, 39, 0.98) !important;
   border: 1px solid #374151 !important;
