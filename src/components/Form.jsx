@@ -30,20 +30,23 @@ const Form = ({
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const errors = {};
-    if (!partner) errors.partner = true;
-    if (!listingName.trim()) errors.listingName = true;
-    if (!listingLink.trim()) errors.listingLink = true;
-    if (!brokerEmail.trim()) errors.brokerEmail = true;
-    if (!sourceType) errors.sourceType = true;
+    // Skip validation if sourceType is "Resourced"
+    if (sourceType !== "Resourced") {
+      const errors = {};
+      if (!partner) errors.partner = true;
+      if (!listingName.trim()) errors.listingName = true;
+      if (!listingLink.trim()) errors.listingLink = true;
+      if (!brokerEmail.trim()) errors.brokerEmail = true;
+      if (!sourceType) errors.sourceType = true;
 
-    if (Object.keys(errors).length > 0) {
-      setFieldErrors(errors);
-      alert("Please fill all required fields");
-      return;
+      if (Object.keys(errors).length > 0) {
+        setFieldErrors(errors);
+        alert("Please fill all required fields");
+        return;
+      }
+
+      setFieldErrors({});
     }
-
-    setFieldErrors({});
 
     setIsSubmitting(true);
     setStatus("Submitting...");

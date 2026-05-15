@@ -276,6 +276,44 @@ export async function getUserSubmissions(email) {
   }
 }
 
+// Get All Submissions (for admin users)
+export async function getAllSubmissions() {
+  try {
+    const response = await sheets.spreadsheets.values.get({
+      spreadsheetId: SUBMISSIONS_SHEET_ID,
+      range: "Submissions!A:P",
+    });
+
+    const rows = response.data.values || [];
+
+    // Skip header row
+    const dataRows = rows.slice(1);
+
+    const submissions = dataRows.map((row) => ({
+      submissionId: row[0],
+      timestamp: row[1],
+      partner: row[3],
+      listingName: row[4],
+      listingLink: row[5],
+      brokerage: row[6],
+      brokerName: row[7],
+      brokerEmail: row[8],
+      sourceType: row[9],
+      notes: row[10],
+      cimReceived: row[11],
+      status: row[12],
+      dueDate: row[13],
+      modifiedDate: row[14],
+      sourcerEmail: row[15],
+    }));
+
+    return { submissions };
+  } catch (error) {
+    console.error("Error fetching all submissions:", error);
+    return { submissions: [] };
+  }
+}
+
 // Update Submission
 export async function updateSubmission(data) {
   try {

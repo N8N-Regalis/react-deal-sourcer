@@ -1,7 +1,7 @@
 import express from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
-import { getPartners, getUserEmail, saveData, getUserSubmissions, updateSubmission, checkDuplicateSubmission } from './googleSheetsService.js'
+import { getPartners, getUserEmail, saveData, getUserSubmissions, updateSubmission, checkDuplicateSubmission, getAllSubmissions } from './googleSheetsService.js'
 
 dotenv.config()
 
@@ -34,12 +34,15 @@ app.get('/api/user', async (req, res) => {
 
 app.post('/api/submit', async (req, res) => {
   try {
-    const { partner, listingLink } = req.body
+    const { partner, listingLink, sourceType } = req.body
     
-    // Check if partner and listing link combination already exists
-    const exists = await checkDuplicateSubmission(partner, listingLink)
-    if (exists) {
-      return res.status(409).json({ error: 'This partner and listing link combination already exists' })
+    // Skip duplicate check if sourceType is "Resourced"
+    if (sourceType !== "Resourced") {
+      // Check if partner and listing link combination already exists
+      const exists = await checkDuplicateSubmission(partner, listingLink)
+      if (exists) {
+        return res.status(409).json({ error: 'This partner and listing link combination already exists' })
+      }
     }
     
     const result = await saveData(req.body)
@@ -50,14 +53,23 @@ app.post('/api/submit', async (req, res) => {
   }
 })
 
+const ADMIN_EMAILS = ['tanveer@regaliscapital.com', 'n8n@regaliscapital.com']
+
 app.get('/api/submissions', async (req, res) => {
   try {
     const { email } = req.query
     if (!email) {
       return res.status(400).json({ error: 'Email parameter required' })
     }
-    const data = await getUserSubmissions(email)
-    res.json(data)
+    
+    // Check if user is admin
+    if (ADMIN_EMAILS.includes(email)) {
+      const data = await getAllSubmissions()
+      res.json(data)
+    } else {
+      const data = await getUserSubmissions(email)
+      res.json(data)
+    }
   } catch (error) {
     console.error('Error fetching submissions:', error)
     res.json({ submissions: [] })
