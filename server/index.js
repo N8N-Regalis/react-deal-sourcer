@@ -1,7 +1,7 @@
 import express from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
-import { getPartners, getUserEmail, saveData, getUserSubmissions, updateSubmission, checkDuplicateSubmission, getAllSubmissions } from './googleSheetsService.js'
+import { getPartners, getUserEmail, saveData, getUserSubmissions, updateSubmission, checkDuplicateSubmission, getAllSubmissions, normalizeUrl } from './googleSheetsService.js'
 
 dotenv.config()
 
@@ -36,12 +36,25 @@ app.post('/api/submit', async (req, res) => {
   try {
     const { partner, listingLink, sourceType } = req.body
     
+    // Validate required fields
+    if (!partner || !listingLink) {
+      return res.status(400).json({ error: 'Partner and listing link are required' })
+    }
+    
+    // Normalize the listing link for duplicate checking
+    let normalizedListingLink
+    try {
+      normalizedListingLink = normalizeUrl(listingLink)
+    } catch (error) {
+      return res.status(400).json({ error: 'Invalid listing link URL' })
+    }
+    
     // Skip duplicate check if sourceType is "Resourced"
     if (sourceType !== "Resourced") {
       // Check if partner and listing link combination already exists
-      const exists = await checkDuplicateSubmission(partner, listingLink)
+      const exists = await checkDuplicateSubmission(partner, normalizedListingLink)
       if (exists) {
-        return res.status(409).json({ error: 'This partner and listing link combination already exists' })
+        return res.status(409).json({ error: 'Listing Link already exists' })
       }
     }
     

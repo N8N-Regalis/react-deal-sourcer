@@ -75,8 +75,8 @@ const Form = ({
       setSourceType("");
       setNotes("");
     } catch (error) {
-      if (error.message === 'This partner and listing link combination already exists') {
-        alert("This partner and listing link combination already exists in the Submissions sheet.");
+      if (error.message === 'Listing Link already exists') {
+        alert("Listing Link already exists in the Submissions sheet.");
       } else {
         alert("Error saving data");
       }

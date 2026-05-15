@@ -7,6 +7,48 @@ dotenv.config();
 const PARTNERS_SHEET_ID = "1j0nSI9PPX1lhgwEQzmATtD8AtsXny11JysV77tVXMhE";
 const SUBMISSIONS_SHEET_ID = "1vRdVw3NywawevVlWVc9Rlu0m9PGcVb--6tVjkDLH4bg";
 
+/**
+ * Normalize URL for duplicate detection
+ * - Converts hostname to lowercase
+ * - Removes www. prefix
+ * - Removes trailing slash
+ * - Removes query parameters and hash fragments
+ * - Normalizes protocol (HTTP/HTTPS treated the same)
+ * @param {string} url - The URL to normalize
+ * @returns {string} Normalized URL
+ * @throws {Error} If URL is invalid
+ */
+export function normalizeUrl(url) {
+  if (!url || typeof url !== 'string') {
+    throw new Error('Invalid URL: URL must be a non-empty string');
+  }
+
+  try {
+    // Parse URL
+    const parsed = new URL(url);
+    
+    // Convert hostname to lowercase
+    parsed.hostname = parsed.hostname.toLowerCase();
+    
+    // Remove www. prefix
+    if (parsed.hostname.startsWith('www.')) {
+      parsed.hostname = parsed.hostname.slice(4);
+    }
+    
+    // Remove query parameters and hash
+    parsed.search = '';
+    parsed.hash = '';
+    
+    // Remove trailing slash from pathname
+    parsed.pathname = parsed.pathname.replace(/\/$/, '');
+    
+    // Reconstruct URL (protocol is normalized by URL constructor)
+    return parsed.toString();
+  } catch (error) {
+    throw new Error(`Invalid URL: ${url}`);
+  }
+}
+
 // Initialize Google Sheets API
 let auth;
 const keyEnv = process.env.GOOGLE_SERVICE_ACCOUNT_KEY;
@@ -56,6 +98,9 @@ export async function getUserEmail() {
 // Check if partner and listing link combination already exists in Submissions sheet
 export async function checkDuplicateSubmission(partnerName, listingLink) {
   try {
+    // Normalize the listing link for comparison
+    const normalizedListingLink = normalizeUrl(listingLink);
+    
     // Fetch only columns D (Partner Name) and F (Listing Link) to reduce data transfer
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: SUBMISSIONS_SHEET_ID,
@@ -72,7 +117,7 @@ export async function checkDuplicateSubmission(partnerName, listingLink) {
 
     console.log("Checking for duplicate submission:");
     console.log("Partner Name (cleaned):", cleanedPartnerName);
-    console.log("Listing Link:", listingLink);
+    console.log("Listing Link (normalized):", normalizedListingLink);
     console.log("Total rows in sheet:", dataRows.length);
 
     // Check if both partner name (column D, index 0 in this range) and listing link (column F, index 2 in this range) match
@@ -80,11 +125,21 @@ export async function checkDuplicateSubmission(partnerName, listingLink) {
       const existingPartner = String(row[0] || "").replace(/[❗⭐]/g, '').trim();
       const existingLink = String(row[2] || "").trim();
       
+      // Normalize existing link for comparison
+      let normalizedExistingLink;
+      try {
+        normalizedExistingLink = normalizeUrl(existingLink);
+      } catch (error) {
+        // If existing link is invalid, skip this row
+        console.log("Skipping invalid existing link:", existingLink);
+        return false;
+      }
+      
       const partnerMatch = existingPartner === cleanedPartnerName;
-      const linkMatch = existingLink === listingLink.trim();
+      const linkMatch = normalizedExistingLink === normalizedListingLink;
       
       console.log("Comparing:", existingPartner, "with", cleanedPartnerName, "=>", partnerMatch);
-      console.log("Comparing:", existingLink, "with", listingLink.trim(), "=>", linkMatch);
+      console.log("Comparing:", normalizedExistingLink, "with", normalizedListingLink, "=>", linkMatch);
       
       return partnerMatch && linkMatch;
     });
