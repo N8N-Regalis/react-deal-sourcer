@@ -467,7 +467,7 @@ const Panel = ({ submissions, onRefresh }) => {
                             const dateStr = submission.timestamp.trim();
                             // Extract just the date part if it's in YYYY-MM-DD HH:MM:SS format
                             const dateOnly = dateStr.split(' ')[0];
-                            return new Date(dateOnly).toLocaleDateString('en-CA');
+                            return dateOnly;
                           } catch (error) {
                             console.error('Error parsing timestamp:', submission.timestamp, error);
                             return 'Invalid Date';
