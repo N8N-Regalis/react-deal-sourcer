@@ -138,8 +138,8 @@ export async function checkDuplicateSubmission(partnerName, listingLink) {
       const partnerMatch = existingPartner === cleanedPartnerName;
       const linkMatch = normalizedExistingLink === normalizedListingLink;
       
-      console.log("Comparing:", existingPartner, "with", cleanedPartnerName, "=>", partnerMatch);
-      console.log("Comparing:", normalizedExistingLink, "with", normalizedListingLink, "=>", linkMatch);
+      // console.log("Comparing:", existingPartner, "with", cleanedPartnerName, "=>", partnerMatch);
+      // console.log("Comparing:", normalizedExistingLink, "with", normalizedListingLink, "=>", linkMatch);
       
       return partnerMatch && linkMatch;
     });
