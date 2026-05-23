@@ -20,6 +20,7 @@ const Panel = ({ submissions, onRefresh }) => {
   const dropdownRefs = useRef({})
 
   const statusOptions = [
+    'Inquired',
     'Pending NDA',
     'NDA Signed', 
     'Follow up',

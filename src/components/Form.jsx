@@ -17,6 +17,7 @@ const Form = ({
   const [brokerEmail, setBrokerEmail] = useState("");
   const [sourceType, setSourceType] = useState("");
   const [notes, setNotes] = useState("");
+  const [dealStatus, setDealStatus] = useState("");
   const [status, setStatus] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [fieldErrors, setFieldErrors] = useState({});
@@ -38,6 +39,7 @@ const Form = ({
       if (!listingLink.trim()) errors.listingLink = true;
       if (!brokerEmail.trim()) errors.brokerEmail = true;
       if (!sourceType) errors.sourceType = true;
+      if (!dealStatus) errors.dealStatus = true;
 
       if (Object.keys(errors).length > 0) {
         setFieldErrors(errors);
@@ -61,6 +63,7 @@ const Form = ({
         brokerEmail,
         sourceType,
         notes,
+        status: dealStatus,
       });
 
       setStatus(`Saved ${result.id}`);
@@ -74,6 +77,7 @@ const Form = ({
       setBrokerEmail("");
       setSourceType("");
       setNotes("");
+      setDealStatus("");
     } catch (error) {
       if (error.message === 'Listing Link already exists') {
         alert("Listing Link already exists in the Submissions sheet.");
@@ -192,6 +196,31 @@ const Form = ({
           </option>
           <option value="Resourced">Resourced</option>
           <option value="New">New</option>
+        </select>
+
+        <label className={fieldErrors.dealStatus ? "error" : ""}>Status</label>
+        <select
+          value={dealStatus}
+          onChange={(e) => {
+            setDealStatus(e.target.value);
+            if (fieldErrors.dealStatus) {
+              setFieldErrors(prev => ({ ...prev, dealStatus: false }));
+            }
+          }}
+          disabled={isSubmitting}
+          className={fieldErrors.dealStatus ? "error" : ""}
+        >
+          <option value="" disabled>
+            -- Select Status --
+          </option>
+          <option value="Inquired">Inquired</option>
+          <option value="Pending NDA">Pending NDA</option>
+          <option value="NDA Signed">NDA Signed</option>
+          <option value="Follow up">Follow up</option>
+          <option value="For Broker Intro Call">For Broker Intro Call</option>
+          <option value="Re-sourced">Re-sourced</option>
+          <option value="Added in Bitrix">Added in Bitrix</option>
+          <option value="Axed">Axed</option>
         </select>
 
         <label>Notes</label>

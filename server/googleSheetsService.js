@@ -261,7 +261,7 @@ export async function saveData(data) {
       data.sourceType,
       data.notes || "",
       "FALSE", // CIM Received
-      "", // Status
+      data.status || "", // Status
       "", // Due Date
       "", // Modified Date
       data.user, // Sourcer Email (same as User Email)
