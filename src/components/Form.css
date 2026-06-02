@@ -20,6 +20,11 @@ label {
   margin-bottom: 6px;
 }
 
+.required-asterisk {
+  color: #dc2626;
+  margin-left: 2px;
+}
+
 input, select, textarea {
   width: 100%;
   box-sizing: border-box;
@@ -62,6 +67,15 @@ label.error {
 input:disabled, select:disabled, textarea:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.readonly-input {
+  background: rgba(11, 18, 32, 0.5);
+  color: #9ca3af;
+  cursor: not-allowed;
+  border: 1px solid rgba(75, 85, 99, 0.5);
+  opacity: 0.7;
+  user-select: none;
 }
 
 .button-row {

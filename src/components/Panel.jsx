@@ -25,14 +25,13 @@ const Panel = ({ submissions, onRefresh }) => {
     'NDA Signed', 
     'Follow up',
     'For Broker Intro Call',
-    'Re-sourced',
     'Added in Bitrix',
     'Axed'
   ]
 
   const columnConfig = [
     { key: 'entryDate', label: 'Entry Date', accessor: 'timestamp' },
-    { key: 'partner', label: 'Partner', accessor: 'partner' },
+    { key: 'partner', label: 'Client', accessor: 'partner' },
     { key: 'listingName', label: 'Listing Name', accessor: 'listingName' },
     { key: 'sourceType', label: 'Type', accessor: 'sourceType' },
     { key: 'status', label: 'Status', accessor: 'status' }
@@ -111,7 +110,7 @@ const Panel = ({ submissions, onRefresh }) => {
   }
 
   const sortOptions = [
-    { value: 'partnerName', label: 'Partner Name' },
+    { value: 'partnerName', label: 'Client Name' },
     { value: 'listingName', label: 'Listing Name' },
     { value: 'entryDate', label: 'Entry Date' },
     { value: 'dueDate', label: 'Due Date' },

@@ -15,9 +15,9 @@ const Form = ({
   const [brokerage, setBrokerage] = useState("");
   const [brokerName, setBrokerName] = useState("");
   const [brokerEmail, setBrokerEmail] = useState("");
-  const [sourceType, setSourceType] = useState("");
+  const [sourceType, setSourceType] = useState("New");
   const [notes, setNotes] = useState("");
-  const [dealStatus, setDealStatus] = useState("");
+  const [dealStatus, setDealStatus] = useState("Inquired");
   const [status, setStatus] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [fieldErrors, setFieldErrors] = useState({});
@@ -30,6 +30,10 @@ const Form = ({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!window.confirm("Please validate if all fields are correct before submitting. Some fields cannot be changed after submission. \n\nAre you sure you want to submit?")) {
+      return;
+    }
 
     // Skip validation if sourceType is "Resourced"
     if (sourceType !== "Resourced") {
@@ -95,7 +99,7 @@ const Form = ({
       <h2>Deal Sourcing Form</h2>
 
       <form onSubmit={handleSubmit}>
-        <label className={fieldErrors.partner ? "error" : ""}>Partner Name</label>
+        <label className={fieldErrors.partner ? "error" : ""}>Client Name <span className="required-asterisk">*</span></label>
         <Select
           value={partner}
           onChange={(selectedOption) => {
@@ -121,7 +125,7 @@ const Form = ({
           }}
         />
 
-        <label className={fieldErrors.listingName ? "error" : ""}>Listing Name</label>
+        <label className={fieldErrors.listingName ? "error" : ""}>Listing Name <span className="required-asterisk">*</span></label>
         <input
           type="text"
           value={listingName}
@@ -135,7 +139,7 @@ const Form = ({
           className={fieldErrors.listingName ? "error" : ""}
         />
 
-        <label className={fieldErrors.listingLink ? "error" : ""}>Listing Link</label>
+        <label className={fieldErrors.listingLink ? "error" : ""}>Listing Link <span className="required-asterisk">*</span></label>
         <input
           type="text"
           value={listingLink}
@@ -165,7 +169,7 @@ const Form = ({
           disabled={isSubmitting}
         />
 
-        <label className={fieldErrors.brokerEmail ? "error" : ""}>Broker Email</label>
+        <label className={fieldErrors.brokerEmail ? "error" : ""}>Broker Email <span className="required-asterisk">*</span></label>
         <input
           type="text"
           value={brokerEmail}
@@ -179,7 +183,7 @@ const Form = ({
           className={fieldErrors.brokerEmail ? "error" : ""}
         />
 
-        <label className={fieldErrors.sourceType ? "error" : ""}>Source Type</label>
+        <label className={fieldErrors.sourceType ? "error" : ""}>Source Type <span className="required-asterisk">*</span></label>
         <select
           value={sourceType}
           onChange={(e) => {
@@ -198,7 +202,7 @@ const Form = ({
           <option value="New">New</option>
         </select>
 
-        <label className={fieldErrors.dealStatus ? "error" : ""}>Status</label>
+        <label className={fieldErrors.dealStatus ? "error" : ""}>Status <span className="required-asterisk">*</span></label>
         <select
           value={dealStatus}
           onChange={(e) => {
@@ -218,7 +222,6 @@ const Form = ({
           <option value="NDA Signed">NDA Signed</option>
           <option value="Follow up">Follow up</option>
           <option value="For Broker Intro Call">For Broker Intro Call</option>
-          <option value="Re-sourced">Re-sourced</option>
           <option value="Added in Bitrix">Added in Bitrix</option>
           <option value="Axed">Axed</option>
         </select>
@@ -231,7 +234,7 @@ const Form = ({
         />
 
         <label>User Email</label>
-        <input type="text" value={userEmail} readOnly />
+        <input className="readonly-input" type="text" value={userEmail} readOnly />
 
         <div className="button-row">
           <button type="submit" className="submit-btn" disabled={isSubmitting}>
