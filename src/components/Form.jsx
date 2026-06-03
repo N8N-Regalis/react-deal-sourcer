@@ -79,9 +79,9 @@ const Form = ({
       setBrokerage("");
       setBrokerName("");
       setBrokerEmail("");
-      setSourceType("");
+      setSourceType("New");
       setNotes("");
-      setDealStatus("");
+      setDealStatus("Inquired");
     } catch (error) {
       if (error.message === 'Listing Link already exists') {
         alert("Listing Link already exists in the Submissions sheet.");
