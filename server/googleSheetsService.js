@@ -12,7 +12,8 @@ const SUBMISSIONS_SHEET_ID = "1vRdVw3NywawevVlWVc9Rlu0m9PGcVb--6tVjkDLH4bg";
  * - Converts hostname to lowercase
  * - Removes www. prefix
  * - Removes trailing slash
- * - Removes query parameters and hash fragments
+ * - Preserves important query parameters (listingId, id, listing, etc.)
+ * - Removes tracking parameters (utm_*, fbclid, etc.)
  * - Normalizes protocol (HTTP/HTTPS treated the same)
  * @param {string} url - The URL to normalize
  * @returns {string} Normalized URL
@@ -35,12 +36,29 @@ export function normalizeUrl(url) {
       parsed.hostname = parsed.hostname.slice(4);
     }
     
-    // Remove query parameters and hash
-    parsed.search = '';
-    parsed.hash = '';
-    
     // Remove trailing slash from pathname
     parsed.pathname = parsed.pathname.replace(/\/$/, '');
+    
+    // Remove hash
+    parsed.hash = '';
+    
+    // Preserve important query parameters, remove tracking parameters
+    const importantParams = ['listingId', 'id', 'listing', 'propertyId', 'mls', 'mlsid'];
+    const trackingParams = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'fbclid', 'gclid'];
+    
+    const params = new URLSearchParams(parsed.search);
+    const filteredParams = new URLSearchParams();
+    
+    for (const [key, value] of params.entries()) {
+      const lowerKey = key.toLowerCase();
+      // Keep if it's an important parameter or not a tracking parameter
+      if (importantParams.includes(lowerKey) || !trackingParams.some(tp => lowerKey.startsWith(tp))) {
+        filteredParams.append(key, value);
+      }
+    }
+    
+    // Update search with filtered parameters
+    parsed.search = filteredParams.toString();
     
     // Reconstruct URL (protocol is normalized by URL constructor)
     return parsed.toString();
