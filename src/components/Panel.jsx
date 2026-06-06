@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import './Panel.css'
 
-const Panel = ({ submissions, onRefresh }) => {
+const Panel = ({ submissions, onRefresh, pagination, onPageChange, filterOptions, onFilterChange }) => {
   const [expandedRows, setExpandedRows] = useState(new Set())
   const [editingRow, setEditingRow] = useState(null)
   const [editFormData, setEditFormData] = useState({})
@@ -93,7 +93,7 @@ const Panel = ({ submissions, onRefresh }) => {
       if (response.ok) {
         setEditingRow(null)
         setEditFormData({})
-        onRefresh() // Refresh the data
+        onRefresh(pagination?.page || 1, filters) // Refresh the current page with filters
       } else {
         console.error('Failed to update submission')
       }
@@ -129,43 +129,48 @@ const Panel = ({ submissions, onRefresh }) => {
     }
   }
 
-  const getUniqueValues = useCallback((columnKey) => {
-    const column = columnConfig.find(col => col.key === columnKey)
-    if (!column) return []
-    
-    const values = submissions.map(submission => {
-      let value = submission[column.accessor]
-      
-      // Special handling for entry date
-      if (column.key === 'entryDate' && value) {
-        try {
-          const dateStr = value.trim()
-          const dateOnly = dateStr.split(' ')[0]
-          value = new Date(dateOnly).toLocaleDateString('en-CA')
-        } catch (error) {
-          value = 'Invalid Date'
-        }
-      }
-      
-      return value || '(Blank)'
-    })
-    
-    // Remove duplicates and sort
-    return [...new Set(values)].sort((a, b) => {
-      if (a === '(Blank)') return -1
-      if (b === '(Blank)') return 1
-      return a.localeCompare(b)
-    })
-  }, [submissions])
-
-  // Cache unique values to avoid recalculation
+  // Use global filter options from server instead of building from current page
   const uniqueValuesCache = useMemo(() => {
     const cache = {}
     columnConfig.forEach(column => {
-      cache[column.key] = getUniqueValues(column.key)
+      cache[column.key] = filterOptions?.[column.key] || []
     })
     return cache
-  }, [submissions, getUniqueValues])
+  }, [filterOptions])
+
+  // Apply sorting to submissions (filtering is now server-side)
+  const getSortedSubmissions = useMemo(() => {
+    const sorted = [...submissions].sort((a, b) => {
+      let aValue, bValue;
+
+      switch (sortBy) {
+        case 'partnerName':
+          aValue = a.partner || '';
+          bValue = b.partner || '';
+          return aValue.localeCompare(bValue);
+        case 'listingName':
+          aValue = a.listingName || '';
+          bValue = b.listingName || '';
+          return aValue.localeCompare(bValue);
+        case 'entryDate':
+          aValue = parseDate(a.timestamp);
+          bValue = parseDate(b.timestamp);
+          return aValue - bValue;
+        case 'dueDate':
+          aValue = parseDate(a.dueDate);
+          bValue = parseDate(b.dueDate);
+          return aValue - bValue;
+        case 'status':
+          aValue = a.status || '';
+          bValue = b.status || '';
+          return aValue.localeCompare(bValue);
+        default:
+          return 0;
+      }
+    });
+
+    return sortOrder === 'asc' ? sorted : sorted.reverse();
+  }, [submissions, sortBy, sortOrder])
 
   const toggleFilterDropdown = (columnKey) => {
     if (activeFilterDropdown === columnKey) {
@@ -183,43 +188,54 @@ const Panel = ({ submissions, onRefresh }) => {
     setFilters(prev => {
       const currentFilters = prev[columnKey] || []
       let newFilters
-      
+
       if (currentFilters.includes(value)) {
         newFilters = currentFilters.filter(f => f !== value)
       } else {
         newFilters = [...currentFilters, value]
       }
-      
-      return {
+
+      const newFiltersState = {
         ...prev,
         [columnKey]: newFilters
       }
+
+      // Trigger server-side filtering
+      onFilterChange(newFiltersState)
+
+      return newFiltersState
     })
   }
 
   const clearColumnFilter = (columnKey) => {
-    setFilters(prev => ({
-      ...prev,
+    const newFiltersState = {
+      ...filters,
       [columnKey]: []
-    }))
+    }
+    setFilters(newFiltersState)
+    onFilterChange(newFiltersState)
   }
 
   const clearAllFilters = () => {
-    setFilters({
+    const newFiltersState = {
       entryDate: [],
       partner: [],
       listingName: [],
       sourceType: [],
       status: []
-    })
+    }
+    setFilters(newFiltersState)
+    onFilterChange(newFiltersState)
   }
 
   const selectAllInColumn = (columnKey) => {
-    const allValues = getUniqueValues(columnKey)
-    setFilters(prev => ({
-      ...prev,
+    const allValues = filterOptions[columnKey] || []
+    const newFiltersState = {
+      ...filters,
       [columnKey]: allValues
-    }))
+    }
+    setFilters(newFiltersState)
+    onFilterChange(newFiltersState)
   }
 
   const getFilteredValues = useCallback((columnKey, searchValue) => {
@@ -313,7 +329,7 @@ const Panel = ({ submissions, onRefresh }) => {
     )
   })
 
-  const getFilteredAndSortedSubmissions = () => {
+  const getFilteredAndSortedSubmissions = useMemo(() => {
     let filtered = submissions.filter(submission => {
       // Check each column filter
       for (const column of columnConfig) {
@@ -374,12 +390,12 @@ const Panel = ({ submissions, onRefresh }) => {
     });
 
     return sortOrder === 'asc' ? sorted : sorted.reverse();
-  }
+  }, [submissions, filters, sortBy, sortOrder])
   return (
     <div className="panel">
       <div className="panel-header">
         <h3>My Sourced Deals</h3>
-        <button className="refresh-btn" onClick={onRefresh}>
+        <button className="refresh-btn" onClick={() => onRefresh(pagination?.page || 1, filters)}>
           Refresh
         </button>
       </div>
@@ -446,14 +462,14 @@ const Panel = ({ submissions, onRefresh }) => {
             </tr>
           </thead>
           <tbody>
-            {getFilteredAndSortedSubmissions().length === 0 ? (
+            {getSortedSubmissions.length === 0 ? (
               <tr>
                 <td colSpan="7" style={{ textAlign: 'center', padding: '20px' }}>
                   No submissions yet
                 </td>
               </tr>
             ) : (
-              getFilteredAndSortedSubmissions().map((submission) => (
+              getSortedSubmissions.map((submission) => (
                 <React.Fragment key={submission.submissionId}>
                   <tr 
                     className={`clickable-row ${isDueToday(submission.dueDate) && submission.status !== 'Axed' && submission.status !== 'Added in Bitrix' ? 'due-today' : ''}`}
@@ -625,6 +641,62 @@ const Panel = ({ submissions, onRefresh }) => {
           </tbody>
         </table>
       </div>
+
+      {pagination && pagination.totalPages > 1 && (
+        <div className="pagination">
+          <button
+            className="pagination-btn"
+            onClick={() => onPageChange(1, filters)}
+            disabled={pagination.page === 1}
+            title="Go to first page"
+          >
+            « First
+          </button>
+          <button
+            className="pagination-btn"
+            onClick={() => onPageChange(pagination.page - 1, filters)}
+            disabled={pagination.page === 1}
+          >
+            Previous
+          </button>
+          <div className="pagination-jump">
+            <input
+              type="number"
+              min="1"
+              max={pagination.totalPages}
+              value={pagination.page}
+              onChange={(e) => {
+                const newPage = parseInt(e.target.value, 10);
+                if (newPage >= 1 && newPage <= pagination.totalPages) {
+                  onPageChange(newPage, filters);
+                }
+              }}
+              className="pagination-input"
+            />
+            <span className="pagination-info">
+              / {pagination.totalPages}
+            </span>
+          </div>
+          <button
+            className="pagination-btn"
+            onClick={() => onPageChange(pagination.page + 1, filters)}
+            disabled={pagination.page === pagination.totalPages}
+          >
+            Next
+          </button>
+          <button
+            className="pagination-btn"
+            onClick={() => onPageChange(pagination.totalPages, filters)}
+            disabled={pagination.page === pagination.totalPages}
+            title="Go to last page"
+          >
+            Last »
+          </button>
+          <span className="pagination-total">
+            ({pagination.total} records)
+          </span>
+        </div>
+      )}
     </div>
   )
 }

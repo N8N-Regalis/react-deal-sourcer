@@ -12,6 +12,19 @@ function App() {
   const [submissions, setSubmissions] = useState([]);
   const [panelVisible, setPanelVisible] = useState(true);
   const [isSignedIn, setIsSignedIn] = useState(false);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 50,
+    total: 0,
+    totalPages: 0
+  });
+  const [filterOptions, setFilterOptions] = useState({
+    entryDate: [],
+    partner: [],
+    listingName: [],
+    sourceType: [],
+    status: []
+  });
 
   useEffect(() => {
     // Check for saved authentication on mount
@@ -26,6 +39,7 @@ function App() {
   useEffect(() => {
     if (isSignedIn && userEmail) {
       loadSubmissions();
+      loadFilterOptions();
     }
   }, [isSignedIn, userEmail]);
 
@@ -58,14 +72,21 @@ function App() {
     }
   };
 
-  const loadSubmissions = async () => {
+  const loadSubmissions = async (page = 1, filters = {}) => {
     try {
       const apiUrl = import.meta.env.VITE_API_URL || "/api";
+      const filtersParam = Object.keys(filters).length > 0 ? `&filters=${encodeURIComponent(JSON.stringify(filters))}` : '';
       const response = await fetch(
-        `${apiUrl}/submissions?email=${encodeURIComponent(userEmail)}`,
+        `${apiUrl}/submissions?email=${encodeURIComponent(userEmail)}&page=${page}&limit=${pagination.limit}${filtersParam}`,
       );
       const data = await response.json();
       setSubmissions(data.submissions || []);
+      setPagination({
+        page: data.page || 1,
+        limit: data.limit || 50,
+        total: data.total || 0,
+        totalPages: data.totalPages || 0
+      });
     } catch (error) {
       console.error("Error loading submissions:", error);
     }
@@ -100,6 +121,24 @@ function App() {
     setPanelVisible(!panelVisible);
   };
 
+  const handlePageChange = (newPage, filters = {}) => {
+    setPagination(prev => ({ ...prev, page: newPage }));
+    loadSubmissions(newPage, filters);
+  };
+
+  const loadFilterOptions = async () => {
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || "/api";
+      const response = await fetch(
+        `${apiUrl}/filter-options?email=${encodeURIComponent(userEmail)}`,
+      );
+      const data = await response.json();
+      setFilterOptions(data);
+    } catch (error) {
+      console.error("Error loading filter options:", error);
+    }
+  };
+
   return (
     <div className={`body ${isSignedIn ? "signed-in" : ""}`}>
       {isSignedIn && <Header userEmail={userEmail} onSignOut={handleSignOut} />}
@@ -129,7 +168,14 @@ function App() {
               panelVisible={panelVisible}
             />
             {panelVisible && (
-              <Panel submissions={submissions} onRefresh={loadSubmissions} />
+              <Panel 
+                submissions={submissions} 
+                onRefresh={loadSubmissions}
+                pagination={pagination}
+                onPageChange={handlePageChange}
+                filterOptions={filterOptions}
+                onFilterChange={(filters) => loadSubmissions(1, filters)}
+              />
             )}
           </>
         )}

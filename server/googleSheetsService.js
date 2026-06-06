@@ -273,9 +273,9 @@ export async function saveData(data) {
       data.partner,
       data.listingName,
       data.listingLink,
-      data.brokerage || "",
-      data.brokerName || "",
-      data.brokerEmail || "",
+      data.brokerage || "N/A",
+      data.brokerName || "N/A",
+      data.brokerEmail || "N/A",
       data.sourceType,
       data.notes || "",
       "FALSE", // CIM Received
@@ -304,8 +304,8 @@ export async function saveData(data) {
   }
 }
 
-// Get User Submissions
-export async function getUserSubmissions(email) {
+// Get User Submissions with pagination and filtering
+export async function getUserSubmissions(email, page = 1, limit = 50, filters = {}) {
   try {
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: SUBMISSIONS_SHEET_ID,
@@ -318,12 +318,62 @@ export async function getUserSubmissions(email) {
     const dataRows = rows.slice(1);
 
     // Filter by user email
-    const filtered = dataRows.filter((row) => {
+    let filtered = dataRows.filter((row) => {
       const userEmail = String(row[2] || "").trim();
       return userEmail === email;
     });
 
-    const submissions = filtered.map((row) => ({
+    // Apply column filters
+    if (filters.entryDate && filters.entryDate.length > 0) {
+      filtered = filtered.filter((row) => {
+        if (!row[1]) return filters.entryDate.includes('(Blank)');
+        try {
+          const dateStr = row[1].trim();
+          const dateOnly = dateStr.split(' ')[0];
+          const formattedDate = new Date(dateOnly).toLocaleDateString('en-CA');
+          return filters.entryDate.includes(formattedDate);
+        } catch (error) {
+          return filters.entryDate.includes('Invalid Date');
+        }
+      });
+    }
+
+    if (filters.partner && filters.partner.length > 0) {
+      filtered = filtered.filter((row) => {
+        const value = row[3] || '(Blank)';
+        return filters.partner.includes(value);
+      });
+    }
+
+    if (filters.listingName && filters.listingName.length > 0) {
+      filtered = filtered.filter((row) => {
+        const value = row[4] || '(Blank)';
+        return filters.listingName.includes(value);
+      });
+    }
+
+    if (filters.sourceType && filters.sourceType.length > 0) {
+      filtered = filtered.filter((row) => {
+        const value = row[9] || '(Blank)';
+        return filters.sourceType.includes(value);
+      });
+    }
+
+    if (filters.status && filters.status.length > 0) {
+      filtered = filtered.filter((row) => {
+        const value = row[12] || '(Blank)';
+        return filters.status.includes(value);
+      });
+    }
+
+    const total = filtered.length;
+    // Reverse to show newest first
+    const reversed = filtered.reverse();
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + limit;
+    const paginatedRows = reversed.slice(startIndex, endIndex);
+
+    const submissions = paginatedRows.map((row) => ({
       submissionId: row[0],
       timestamp: row[1],
       partner: row[3],
@@ -341,16 +391,104 @@ export async function getUserSubmissions(email) {
       sourcerEmail: row[15],
     }));
 
-    return { submissions };
+    return { submissions, total, page, limit, totalPages: Math.ceil(total / limit) };
   } catch (error) {
     console.error("Error fetching submissions:", error);
     // Return empty if sheet doesn't exist yet
-    return { submissions: [] };
+    return { submissions: [], total: 0, page, limit, totalPages: 0 };
   }
 }
 
-// Get All Submissions (for admin users)
-export async function getAllSubmissions() {
+// Get All Submissions (for admin users) with pagination and filtering
+export async function getAllSubmissions(page = 1, limit = 50, filters = {}) {
+  try {
+    const response = await sheets.spreadsheets.values.get({
+      spreadsheetId: SUBMISSIONS_SHEET_ID,
+      range: "Submissions!A:P",
+    });
+
+    const rows = response.data.values || [];
+
+    // Skip header row
+    let dataRows = rows.slice(1);
+
+    // Apply column filters
+    if (filters.entryDate && filters.entryDate.length > 0) {
+      dataRows = dataRows.filter((row) => {
+        if (!row[1]) return filters.entryDate.includes('(Blank)');
+        try {
+          const dateStr = row[1].trim();
+          const dateOnly = dateStr.split(' ')[0];
+          const formattedDate = new Date(dateOnly).toLocaleDateString('en-CA');
+          return filters.entryDate.includes(formattedDate);
+        } catch (error) {
+          return filters.entryDate.includes('Invalid Date');
+        }
+      });
+    }
+
+    if (filters.partner && filters.partner.length > 0) {
+      dataRows = dataRows.filter((row) => {
+        const value = row[3] || '(Blank)';
+        return filters.partner.includes(value);
+      });
+    }
+
+    if (filters.listingName && filters.listingName.length > 0) {
+      dataRows = dataRows.filter((row) => {
+        const value = row[4] || '(Blank)';
+        return filters.listingName.includes(value);
+      });
+    }
+
+    if (filters.sourceType && filters.sourceType.length > 0) {
+      dataRows = dataRows.filter((row) => {
+        const value = row[9] || '(Blank)';
+        return filters.sourceType.includes(value);
+      });
+    }
+
+    if (filters.status && filters.status.length > 0) {
+      dataRows = dataRows.filter((row) => {
+        const value = row[12] || '(Blank)';
+        return filters.status.includes(value);
+      });
+    }
+
+    const total = dataRows.length;
+    // Reverse to show newest first
+    const reversed = dataRows.reverse();
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + limit;
+    const paginatedRows = reversed.slice(startIndex, endIndex);
+
+    const submissions = paginatedRows.map((row) => ({
+      submissionId: row[0],
+      timestamp: row[1],
+      partner: row[3],
+      listingName: row[4],
+      listingLink: row[5],
+      brokerage: row[6],
+      brokerName: row[7],
+      brokerEmail: row[8],
+      sourceType: row[9],
+      notes: row[10],
+      cimReceived: row[11],
+      status: row[12],
+      dueDate: row[13],
+      modifiedDate: row[14],
+      sourcerEmail: row[15],
+    }));
+
+    return { submissions, total, page, limit, totalPages: Math.ceil(total / limit) };
+  } catch (error) {
+    console.error("Error fetching all submissions:", error);
+    return { submissions: [], total: 0, page, limit, totalPages: 0 };
+  }
+}
+
+// Get Filter Options (all unique values across all records)
+export async function getFilterOptions(email) {
   try {
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: SUBMISSIONS_SHEET_ID,
@@ -362,28 +500,76 @@ export async function getAllSubmissions() {
     // Skip header row
     const dataRows = rows.slice(1);
 
-    const submissions = dataRows.map((row) => ({
-      submissionId: row[0],
-      timestamp: row[1],
-      partner: row[3],
-      listingName: row[4],
-      listingLink: row[5],
-      brokerage: row[6],
-      brokerName: row[7],
-      brokerEmail: row[8],
-      sourceType: row[9],
-      notes: row[10],
-      cimReceived: row[11],
-      status: row[12],
-      dueDate: row[13],
-      modifiedDate: row[14],
-      sourcerEmail: row[15],
-    }));
+    // Filter by user email if not admin
+    let filteredRows = dataRows;
+    if (email && !['tanveer@regaliscapital.com', 'n8n@regaliscapital.com'].includes(email)) {
+      filteredRows = dataRows.filter((row) => {
+        const userEmail = String(row[2] || "").trim();
+        return userEmail === email;
+      });
+    }
 
-    return { submissions };
+    // Extract unique values for each column
+    const entryDates = new Set();
+    const partners = new Set();
+    const listingNames = new Set();
+    const sourceTypes = new Set();
+    const statuses = new Set();
+
+    filteredRows.forEach((row) => {
+      // Entry Date (column B, index 1)
+      if (row[1]) {
+        try {
+          const dateStr = row[1].trim();
+          const dateOnly = dateStr.split(' ')[0];
+          const formattedDate = new Date(dateOnly).toLocaleDateString('en-CA');
+          entryDates.add(formattedDate);
+        } catch (error) {
+          entryDates.add('Invalid Date');
+        }
+      } else {
+        entryDates.add('(Blank)');
+      }
+
+      // Partner (column D, index 3)
+      partners.add(row[3] || '(Blank)');
+
+      // Listing Name (column E, index 4)
+      listingNames.add(row[4] || '(Blank)');
+
+      // Source Type (column K, index 9)
+      sourceTypes.add(row[9] || '(Blank)');
+
+      // Status (column M, index 12)
+      statuses.add(row[12] || '(Blank)');
+    });
+
+    // Convert to arrays and sort
+    const sortArray = (arr) => {
+      const array = Array.from(arr);
+      return array.sort((a, b) => {
+        if (a === '(Blank)') return -1;
+        if (b === '(Blank)') return 1;
+        return a.localeCompare(b);
+      });
+    };
+
+    return {
+      entryDate: sortArray(entryDates),
+      partner: sortArray(partners),
+      listingName: sortArray(listingNames),
+      sourceType: sortArray(sourceTypes),
+      status: sortArray(statuses)
+    };
   } catch (error) {
-    console.error("Error fetching all submissions:", error);
-    return { submissions: [] };
+    console.error("Error fetching filter options:", error);
+    return {
+      entryDate: [],
+      partner: [],
+      listingName: [],
+      sourceType: [],
+      status: []
+    };
   }
 }
 

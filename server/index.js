@@ -1,7 +1,7 @@
 import express from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
-import { getPartners, getUserEmail, saveData, getUserSubmissions, updateSubmission, checkDuplicateSubmission, getAllSubmissions, normalizeUrl } from './googleSheetsService.js'
+import { getPartners, getUserEmail, saveData, getUserSubmissions, updateSubmission, checkDuplicateSubmission, getAllSubmissions, normalizeUrl, getFilterOptions } from './googleSheetsService.js'
 
 dotenv.config()
 
@@ -73,22 +73,26 @@ const ADMIN_EMAILS = ['tanveer@regaliscapital.com', 'n8n@regaliscapital.com']
 
 app.get('/api/submissions', async (req, res) => {
   try {
-    const { email } = req.query
+    const { email, page = 1, limit = 50, filters } = req.query
     if (!email) {
       return res.status(400).json({ error: 'Email parameter required' })
     }
     
+    const pageNum = parseInt(page, 10)
+    const limitNum = parseInt(limit, 10)
+    const filtersObj = filters ? JSON.parse(filters) : {}
+    
     // Check if user is admin
     if (ADMIN_EMAILS.includes(email)) {
-      const data = await getAllSubmissions()
+      const data = await getAllSubmissions(pageNum, limitNum, filtersObj)
       res.json(data)
     } else {
-      const data = await getUserSubmissions(email)
+      const data = await getUserSubmissions(email, pageNum, limitNum, filtersObj)
       res.json(data)
     }
   } catch (error) {
     console.error('Error fetching submissions:', error)
-    res.json({ submissions: [] })
+    res.json({ submissions: [], total: 0, page: 1, limit: 50, totalPages: 0 })
   }
 })
 
@@ -99,6 +103,21 @@ app.put('/api/update-submission', async (req, res) => {
   } catch (error) {
     console.error('Error updating submission:', error)
     res.status(500).json({ error: 'Failed to update submission' })
+  }
+})
+
+app.get('/api/filter-options', async (req, res) => {
+  try {
+    const { email } = req.query
+    if (!email) {
+      return res.status(400).json({ error: 'Email parameter required' })
+    }
+    
+    const options = await getFilterOptions(email)
+    res.json(options)
+  } catch (error) {
+    console.error('Error fetching filter options:', error)
+    res.status(500).json({ error: 'Failed to fetch filter options' })
   }
 })
 
