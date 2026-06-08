@@ -6,7 +6,7 @@ const Panel = ({ submissions, onRefresh, pagination, onPageChange, filterOptions
   const [editingRow, setEditingRow] = useState(null)
   const [editFormData, setEditFormData] = useState({})
   const [sortBy, setSortBy] = useState('entryDate')
-  const [sortOrder, setSortOrder] = useState('desc')
+  const [sortOrder, setSortOrder] = useState('asc')
   const [filters, setFilters] = useState({
     entryDate: [],
     partner: [],

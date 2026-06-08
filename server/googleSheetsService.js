@@ -3,6 +3,32 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
+// In-memory cache with TTL (5 minutes for filter options, 30 seconds for submissions)
+const cache = new Map();
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes in milliseconds
+const SUBMISSIONS_CACHE_TTL = 30 * 1000; // 30 seconds in milliseconds
+
+function getCache(key) {
+  const cached = cache.get(key);
+  if (!cached) return null;
+  if (Date.now() > cached.expiry) {
+    cache.delete(key);
+    return null;
+  }
+  return cached.data;
+}
+
+function setCache(key, data, customTTL = null) {
+  cache.set(key, {
+    data,
+    expiry: Date.now() + (customTTL || CACHE_TTL)
+  });
+}
+
+function clearCache() {
+  cache.clear();
+}
+
 // Spreadsheet IDs
 const PARTNERS_SHEET_ID = "1j0nSI9PPX1lhgwEQzmATtD8AtsXny11JysV77tVXMhE";
 const SUBMISSIONS_SHEET_ID = "1vRdVw3NywawevVlWVc9Rlu0m9PGcVb--6tVjkDLH4bg";
@@ -119,6 +145,13 @@ export async function checkDuplicateSubmission(partnerName, listingLink) {
     // Normalize the listing link for comparison
     const normalizedListingLink = normalizeUrl(listingLink);
     
+    // Clean partner name by removing special characters
+    const cleanedPartnerName = partnerName.replace(/[❗⭐]/g, '').trim();
+
+    console.log("Checking for duplicate submission:");
+    console.log("Partner Name (cleaned):", cleanedPartnerName);
+    console.log("Listing Link (normalized):", normalizedListingLink);
+
     // Fetch only columns D (Partner Name) and F (Listing Link) to reduce data transfer
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: SUBMISSIONS_SHEET_ID,
@@ -130,17 +163,28 @@ export async function checkDuplicateSubmission(partnerName, listingLink) {
     // Skip header row
     const dataRows = rows.slice(1);
 
-    // Clean partner name by removing special characters
-    const cleanedPartnerName = partnerName.replace(/[❗⭐]/g, '').trim();
-
-    console.log("Checking for duplicate submission:");
-    console.log("Partner Name (cleaned):", cleanedPartnerName);
-    console.log("Listing Link (normalized):", normalizedListingLink);
     console.log("Total rows in sheet:", dataRows.length);
 
-    // Check if both partner name (column D, index 0 in this range) and listing link (column F, index 2 in this range) match
-    const exists = dataRows.some((row) => {
+    // Early exit if no data
+    if (dataRows.length === 0) {
+      return false;
+    }
+
+    // Filter rows by partner name first (much faster than URL normalization)
+    const partnerMatches = dataRows.filter((row) => {
       const existingPartner = String(row[0] || "").replace(/[❗⭐]/g, '').trim();
+      return existingPartner === cleanedPartnerName;
+    });
+
+    console.log("Partner matches found:", partnerMatches.length);
+
+    // If no partner matches, no need to check URLs
+    if (partnerMatches.length === 0) {
+      return false;
+    }
+
+    // Now check URL matches only for partner matches (much smaller dataset)
+    const exists = partnerMatches.some((row) => {
       const existingLink = String(row[2] || "").trim();
       
       // Normalize existing link for comparison
@@ -149,17 +193,11 @@ export async function checkDuplicateSubmission(partnerName, listingLink) {
         normalizedExistingLink = normalizeUrl(existingLink);
       } catch (error) {
         // If existing link is invalid, skip this row
-        console.log("Skipping invalid existing link:", existingLink);
         return false;
       }
       
-      const partnerMatch = existingPartner === cleanedPartnerName;
       const linkMatch = normalizedExistingLink === normalizedListingLink;
-      
-      // console.log("Comparing:", existingPartner, "with", cleanedPartnerName, "=>", partnerMatch);
-      // console.log("Comparing:", normalizedExistingLink, "with", normalizedListingLink, "=>", linkMatch);
-      
-      return partnerMatch && linkMatch;
+      return linkMatch;
     });
 
     console.log("Duplicate found:", exists);
@@ -297,6 +335,9 @@ export async function saveData(data) {
       },
     });
 
+    // Clear cache when new data is saved to ensure consistency
+    clearCache();
+
     return { id };
   } catch (error) {
     console.error("Error saving data:", error);
@@ -307,6 +348,14 @@ export async function saveData(data) {
 // Get User Submissions with pagination and filtering
 export async function getUserSubmissions(email, page = 1, limit = 50, filters = {}) {
   try {
+    // Check cache first
+    const cacheKey = `submissions_${email}_${page}_${limit}_${JSON.stringify(filters)}`;
+    const cached = getCache(cacheKey);
+    if (cached) {
+      console.log("Returning cached submissions for:", email);
+      return cached;
+    }
+
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: SUBMISSIONS_SHEET_ID,
       range: "Submissions!A:P",
@@ -391,7 +440,9 @@ export async function getUserSubmissions(email, page = 1, limit = 50, filters = 
       sourcerEmail: row[15],
     }));
 
-    return { submissions, total, page, limit, totalPages: Math.ceil(total / limit) };
+    const result = { submissions, total, page, limit, totalPages: Math.ceil(total / limit) };
+    setCache(cacheKey, result, SUBMISSIONS_CACHE_TTL);
+    return result;
   } catch (error) {
     console.error("Error fetching submissions:", error);
     // Return empty if sheet doesn't exist yet
@@ -402,6 +453,14 @@ export async function getUserSubmissions(email, page = 1, limit = 50, filters = 
 // Get All Submissions (for admin users) with pagination and filtering
 export async function getAllSubmissions(page = 1, limit = 50, filters = {}) {
   try {
+    // Check cache first
+    const cacheKey = `allSubmissions_${page}_${limit}_${JSON.stringify(filters)}`;
+    const cached = getCache(cacheKey);
+    if (cached) {
+      console.log("Returning cached all submissions");
+      return cached;
+    }
+
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: SUBMISSIONS_SHEET_ID,
       range: "Submissions!A:P",
@@ -480,7 +539,9 @@ export async function getAllSubmissions(page = 1, limit = 50, filters = {}) {
       sourcerEmail: row[15],
     }));
 
-    return { submissions, total, page, limit, totalPages: Math.ceil(total / limit) };
+    const result = { submissions, total, page, limit, totalPages: Math.ceil(total / limit) };
+    setCache(cacheKey, result, SUBMISSIONS_CACHE_TTL);
+    return result;
   } catch (error) {
     console.error("Error fetching all submissions:", error);
     return { submissions: [], total: 0, page, limit, totalPages: 0 };
@@ -490,6 +551,15 @@ export async function getAllSubmissions(page = 1, limit = 50, filters = {}) {
 // Get Filter Options (all unique values across all records)
 export async function getFilterOptions(email) {
   try {
+    // Check cache first
+    const cacheKey = `filterOptions_${email || 'all'}`;
+    const cached = getCache(cacheKey);
+    if (cached) {
+      console.log("Returning cached filter options for:", email);
+      return cached;
+    }
+
+    console.log("Fetching filter options from sheet for:", email);
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: SUBMISSIONS_SHEET_ID,
       range: "Submissions!A:P",
@@ -554,13 +624,18 @@ export async function getFilterOptions(email) {
       });
     };
 
-    return {
+    const result = {
       entryDate: sortArray(entryDates),
       partner: sortArray(partners),
       listingName: sortArray(listingNames),
       sourceType: sortArray(sourceTypes),
       status: sortArray(statuses)
     };
+
+    // Cache the result
+    setCache(cacheKey, result);
+
+    return result;
   } catch (error) {
     console.error("Error fetching filter options:", error);
     return {
@@ -655,6 +730,9 @@ export async function updateSubmission(data) {
         values: [[data.notes]],
       },
     });
+
+    // Clear cache when submission is updated to ensure consistency
+    clearCache();
 
     return { success: true };
   } catch (error) {
