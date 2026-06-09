@@ -118,8 +118,22 @@
   transition: background 0.2s ease;
 }
 
-.refresh-btn:hover {
+.refresh-btn:hover:not(:disabled) {
   background: linear-gradient(135deg, rgba(37, 99, 235, 0.45), rgba(99, 102, 241, 0.35));
+}
+
+.refresh-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .table-wrapper {
@@ -714,7 +728,7 @@ tbody td a:active {
 
 @media (max-width: 480px) {
   .panel {
-    padding: 16px;
+    padding: 12px;
     border-radius: 12px;
     height: 600px;
   }
@@ -786,19 +800,6 @@ tbody td a:active {
   .edit-actions {
     justify-content: center;
   }
-
-  .pagination {
-    padding: 8px;
-  }
-
-  .pagination-btn {
-    padding: 6px 10px;
-    font-size: 11px;
-  }
-
-  .pagination-info {
-    font-size: 11px;
-  }
 }
 
 /* Pagination styles */
@@ -826,6 +827,10 @@ tbody td a:active {
   transition: background 0.2s ease;
   font-weight: 500;
   white-space: nowrap;
+}
+
+.pagination-btn .btn-label-short {
+  display: none;
 }
 
 .pagination-btn:hover:not(:disabled) {
@@ -887,4 +892,50 @@ tbody td a:active {
   width: 100%;
   text-align: center;
   margin-top: 8px;
+}
+
+/* Mobile/tablet pagination — placed after base styles so these rules win */
+@media (max-width: 640px) {
+  .pagination {
+    flex-wrap: nowrap;
+    gap: 6px;
+    padding: 10px;
+  }
+
+  .pagination-btn {
+    padding: 8px 12px;
+    font-size: 14px;
+    flex: 0 0 auto;
+    white-space: nowrap;
+    line-height: 1;
+  }
+
+  .pagination-btn .btn-label-full {
+    display: none;
+  }
+
+  .pagination-btn .btn-label-short {
+    display: inline;
+  }
+
+  .pagination-input {
+    width: 42px;
+    padding: 6px 8px;
+    font-size: 13px;
+    flex: 0 0 auto;
+  }
+
+  .pagination-jump {
+    gap: 4px;
+    flex: 0 0 auto;
+  }
+
+  .pagination-info {
+    font-size: 13px;
+    white-space: nowrap;
+  }
+
+  .pagination-total {
+    display: none;
+  }
 }

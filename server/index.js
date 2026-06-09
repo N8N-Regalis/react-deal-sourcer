@@ -64,8 +64,13 @@ app.post('/api/submit', async (req, res) => {
     const result = await saveData(req.body)
     res.json(result)
   } catch (error) {
-    console.error('Error saving data:', error)
-    res.status(500).json({ error: 'Failed to save data' })
+    // Log simpler message for duplicate errors
+    if (error.message.includes('already exists')) {
+      console.log('Duplicate detected:', error.message)
+    } else {
+      console.error('Error saving data:', error)
+    }
+    res.status(400).json({ error: error.message || 'Failed to save data' })
   }
 })
 

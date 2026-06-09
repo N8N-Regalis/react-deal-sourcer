@@ -32,6 +32,7 @@ function clearCache() {
 // Spreadsheet IDs
 const PARTNERS_SHEET_ID = "1j0nSI9PPX1lhgwEQzmATtD8AtsXny11JysV77tVXMhE";
 const SUBMISSIONS_SHEET_ID = "1vRdVw3NywawevVlWVc9Rlu0m9PGcVb--6tVjkDLH4bg";
+const ARCHIVE_SHEET_ID = "1id2PtF2f4t5IIp8-87V2s5wgutuCC5QWGtYijIn28Js";
 
 /**
  * Normalize URL for duplicate detection
@@ -139,8 +140,8 @@ export async function getUserEmail() {
   return process.env.USER_EMAIL || "";
 }
 
-// Check if partner and listing link combination already exists in Submissions sheet
-export async function checkDuplicateSubmission(partnerName, listingLink) {
+// Helper function to check for duplicates in a specific sheet
+async function checkDuplicateInSheet(sheetId, sheetName, partnerName, listingLink) {
   try {
     // Normalize the listing link for comparison
     const normalizedListingLink = normalizeUrl(listingLink);
@@ -148,14 +149,14 @@ export async function checkDuplicateSubmission(partnerName, listingLink) {
     // Clean partner name by removing special characters
     const cleanedPartnerName = partnerName.replace(/[❗⭐]/g, '').trim();
 
-    console.log("Checking for duplicate submission:");
+    console.log(`Checking for duplicate in ${sheetName} sheet:`);
     console.log("Partner Name (cleaned):", cleanedPartnerName);
     console.log("Listing Link (normalized):", normalizedListingLink);
 
     // Fetch only columns D (Partner Name) and F (Listing Link) to reduce data transfer
     const response = await sheets.spreadsheets.values.get({
-      spreadsheetId: SUBMISSIONS_SHEET_ID,
-      range: "Submissions!D:F",
+      spreadsheetId: sheetId,
+      range: `${sheetName}!D:F`,
     });
 
     const rows = response.data.values || [];
@@ -163,7 +164,7 @@ export async function checkDuplicateSubmission(partnerName, listingLink) {
     // Skip header row
     const dataRows = rows.slice(1);
 
-    console.log("Total rows in sheet:", dataRows.length);
+    console.log(`Total rows in ${sheetName} sheet:`, dataRows.length);
 
     // Early exit if no data
     if (dataRows.length === 0) {
@@ -176,7 +177,7 @@ export async function checkDuplicateSubmission(partnerName, listingLink) {
       return existingPartner === cleanedPartnerName;
     });
 
-    console.log("Partner matches found:", partnerMatches.length);
+    console.log(`Partner matches found in ${sheetName}:`, partnerMatches.length);
 
     // If no partner matches, no need to check URLs
     if (partnerMatches.length === 0) {
@@ -200,18 +201,57 @@ export async function checkDuplicateSubmission(partnerName, listingLink) {
       return linkMatch;
     });
 
-    console.log("Duplicate found:", exists);
+    console.log(`Duplicate found in ${sheetName}:`, exists);
     return exists;
   } catch (error) {
-    console.error("Error checking duplicate submission:", error);
+    console.error(`Error checking duplicate in ${sheetName}:`, error);
     // If sheet doesn't exist yet, return false
     return false;
   }
 }
 
+// Check if partner and listing link combination already exists in Submissions sheet or Archive sheet
+export async function checkDuplicateSubmission(partnerName, listingLink) {
+  console.log("Starting duplicate check...");
+
+  // First check Submissions sheet
+  const duplicateInSubmissions = await checkDuplicateInSheet(
+    SUBMISSIONS_SHEET_ID,
+    "Submissions",
+    partnerName,
+    listingLink
+  );
+
+  // If duplicate found in Submissions, throw error immediately (no need to check Archive)
+  if (duplicateInSubmissions) {
+    console.log("Duplicate found in Submissions sheet - skipping Archive check");
+    throw new Error('Listing Link already exists in the Submissions database.');
+  }
+
+  // If no duplicate in Submissions, check Archive sheet
+  console.log("No duplicate in Submissions - checking Archive sheet...");
+  const duplicateInArchive = await checkDuplicateInSheet(
+    ARCHIVE_SHEET_ID,
+    "Archive",
+    partnerName,
+    listingLink
+  );
+
+  if (duplicateInArchive) {
+    throw new Error('Listing Link already exists in the Archived Submissions database.');
+  }
+
+  return false;
+}
+
 // Save Data to Submissions sheet
 export async function saveData(data) {
   try {
+    // Validate listing name length
+    if (data.listingName && data.listingName.length > 180) {
+      throw new Error('Listing Name must be 180 characters or less');
+    }
+
     // Get or create Submissions sheet
     const spreadsheet = await sheets.spreadsheets.get({
       spreadsheetId: SUBMISSIONS_SHEET_ID,

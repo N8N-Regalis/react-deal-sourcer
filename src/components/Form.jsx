@@ -35,6 +35,12 @@ const Form = ({
       return;
     }
 
+    // Always validate listing name length regardless of source type
+    if (listingName.length > 180) {
+      alert("Listing Name must be 180 characters or less");
+      return;
+    }
+
     // Skip validation if sourceType is "Resourced"
     if (sourceType !== "Resourced") {
       const errors = {};
@@ -83,8 +89,10 @@ const Form = ({
       setNotes("");
       setDealStatus("Inquired");
     } catch (error) {
-      if (error.message === 'Listing Link already exists') {
-        alert("Listing Link already exists in the Submissions sheet.");
+      if (error.message === 'Listing Link already exists in the Submissions database.') {
+        alert("Listing Link already exists in the Submissions database.");
+      } else if (error.message === 'Listing Link already exists in the Archived Submissions database.') {
+        alert("Listing Link already exists in the Archived Submissions database.");
       } else {
         alert("Error saving data");
       }
@@ -137,7 +145,9 @@ const Form = ({
           }}
           disabled={isSubmitting}
           className={fieldErrors.listingName ? "error" : ""}
+          maxLength={180}
         />
+        <div className={`character-count ${listingName.length === 180 ? "limit-reached" : ""}`}>({listingName.length}/180)</div>
 
         <label className={fieldErrors.listingLink ? "error" : ""}>Listing Link <span className="required-asterisk">*</span></label>
         <input

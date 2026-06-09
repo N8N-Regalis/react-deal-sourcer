@@ -17,6 +17,7 @@ const Panel = ({ submissions, onRefresh, pagination, onPageChange, filterOptions
   const [activeFilterDropdown, setActiveFilterDropdown] = useState(null)
   const [filterSearch, setFilterSearch] = useState('')
   const [debouncedFilterSearch, setDebouncedFilterSearch] = useState('')
+  const [isRefreshing, setIsRefreshing] = useState(false)
   const dropdownRefs = useRef({})
 
   const statusOptions = [
@@ -395,8 +396,20 @@ const Panel = ({ submissions, onRefresh, pagination, onPageChange, filterOptions
     <div className="panel">
       <div className="panel-header">
         <h3>My Sourced Deals</h3>
-        <button className="refresh-btn" onClick={() => onRefresh(pagination?.page || 1, filters)}>
-          Refresh
+        <button
+          className="refresh-btn"
+          onClick={async () => {
+            setIsRefreshing(true)
+            try {
+              await onRefresh(pagination?.page || 1, filters)
+            } finally {
+              setIsRefreshing(false)
+            }
+          }}
+          disabled={isRefreshing}
+          title={isRefreshing ? "Refreshing..." : "Refresh submissions"}
+        >
+          {isRefreshing ? '⟳ Refreshing...' : '↻ Refresh'}
         </button>
       </div>
 
@@ -650,14 +663,17 @@ const Panel = ({ submissions, onRefresh, pagination, onPageChange, filterOptions
             disabled={pagination.page === 1}
             title="Go to first page"
           >
-            « First
+            <span className="btn-label-full">« First</span>
+            <span className="btn-label-short">«</span>
           </button>
           <button
             className="pagination-btn"
             onClick={() => onPageChange(pagination.page - 1, filters)}
             disabled={pagination.page === 1}
+            title="Previous page"
           >
-            Previous
+            <span className="btn-label-full">Previous</span>
+            <span className="btn-label-short">‹</span>
           </button>
           <div className="pagination-jump">
             <input
@@ -681,8 +697,10 @@ const Panel = ({ submissions, onRefresh, pagination, onPageChange, filterOptions
             className="pagination-btn"
             onClick={() => onPageChange(pagination.page + 1, filters)}
             disabled={pagination.page === pagination.totalPages}
+            title="Next page"
           >
-            Next
+            <span className="btn-label-full">Next</span>
+            <span className="btn-label-short">›</span>
           </button>
           <button
             className="pagination-btn"
@@ -690,7 +708,8 @@ const Panel = ({ submissions, onRefresh, pagination, onPageChange, filterOptions
             disabled={pagination.page === pagination.totalPages}
             title="Go to last page"
           >
-            Last »
+            <span className="btn-label-full">Last »</span>
+            <span className="btn-label-short">»</span>
           </button>
           <span className="pagination-total">
             ({pagination.total} records)
