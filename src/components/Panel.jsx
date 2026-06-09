@@ -94,7 +94,7 @@ const Panel = ({ submissions, onRefresh, pagination, onPageChange, filterOptions
       if (response.ok) {
         setEditingRow(null)
         setEditFormData({})
-        onRefresh(pagination?.page || 1, filters) // Refresh the current page with filters
+        onRefresh(pagination?.page || 1, filters, pagination?.limit || 50) // Refresh the current page with filters
       } else {
         console.error('Failed to update submission')
       }
@@ -401,7 +401,7 @@ const Panel = ({ submissions, onRefresh, pagination, onPageChange, filterOptions
           onClick={async () => {
             setIsRefreshing(true)
             try {
-              await onRefresh(pagination?.page || 1, filters)
+              await onRefresh(pagination?.page || 1, filters, pagination?.limit || 50)
             } finally {
               setIsRefreshing(false)
             }

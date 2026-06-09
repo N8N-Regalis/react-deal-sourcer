@@ -38,10 +38,10 @@ function App() {
 
   useEffect(() => {
     if (isSignedIn && userEmail) {
-      loadSubmissions();
+      loadSubmissions(1, {}, pagination.limit);
       loadFilterOptions();
     }
-  }, [isSignedIn, userEmail]);
+  }, [isSignedIn, userEmail, pagination.limit]);
 
   const handleSignIn = (email) => {
     setUserEmail(email);
@@ -72,18 +72,18 @@ function App() {
     }
   };
 
-  const loadSubmissions = async (page = 1, filters = {}) => {
+  const loadSubmissions = async (page = 1, filters = {}, limit = 50) => {
     try {
       const apiUrl = import.meta.env.VITE_API_URL || "/api";
       const filtersParam = Object.keys(filters).length > 0 ? `&filters=${encodeURIComponent(JSON.stringify(filters))}` : '';
       const response = await fetch(
-        `${apiUrl}/submissions?email=${encodeURIComponent(userEmail)}&page=${page}&limit=${pagination.limit}${filtersParam}`,
+        `${apiUrl}/submissions?email=${encodeURIComponent(userEmail)}&page=${page}&limit=${limit}${filtersParam}`,
       );
       const data = await response.json();
       setSubmissions(data.submissions || []);
       setPagination({
         page: data.page || 1,
-        limit: data.limit || 50,
+        limit: data.limit || limit,
         total: data.total || 0,
         totalPages: data.totalPages || 0
       });
@@ -109,7 +109,7 @@ function App() {
       }
       
       const data = await response.json();
-      loadSubmissions();
+      loadSubmissions(1, {}, pagination.limit);
       return data;
     } catch (error) {
       console.error("Error submitting data:", error);
@@ -123,7 +123,7 @@ function App() {
 
   const handlePageChange = (newPage, filters = {}) => {
     setPagination(prev => ({ ...prev, page: newPage }));
-    loadSubmissions(newPage, filters);
+    loadSubmissions(newPage, filters, pagination.limit);
   };
 
   const loadFilterOptions = async () => {
@@ -174,7 +174,7 @@ function App() {
                 pagination={pagination}
                 onPageChange={handlePageChange}
                 filterOptions={filterOptions}
-                onFilterChange={(filters) => loadSubmissions(1, filters)}
+                onFilterChange={(filters) => loadSubmissions(1, filters, pagination.limit)}
               />
             )}
           </>
